@@ -294,11 +294,11 @@ X_flat = X.reshape(X.shape[0], (X.shape[1] * X.shape[2]))
 #%% 
 # GUARDO LOS DATOS
 # Guardo los datos en un archivo pickle
-with open('data/L5_bins200ms_withCtxt_preprocessed.pickle', 'wb') as f:
+with open('processed-datasets/L5_bins200ms_withCtxt_preprocessed.pickle', 'wb') as f:
     pickle.dump((X, y, trial_ids), f)
     
 # Guardo los datos en un archivo pickle
-with open('data/L5_bins200ms_withCtxt_preprocessed_flat.pickle', 'wb') as f:
+with open('processed-datasets/L5_bins200ms_withCtxt_preprocessed_flat.pickle', 'wb') as f:
     pickle.dump((X_flat, y, trial_ids), f)
     
 print("Datos guardados correctamente")
