@@ -50,6 +50,11 @@ class BaselineTrainer:
         # Results storage
         self.results = {}
         
+        # Experiment tracking
+        self.experiment_start_time = None
+        self.experiment_params = {}
+        self.experiment_dir = None
+        
     def _load_data(self):
         """Load both flat and sequential data formats"""
         print("📂 Loading preprocessed data...")
@@ -207,7 +212,7 @@ class BaselineTrainer:
             
         # Save model if requested
         if save_model:
-            model_path = self.results_dir / f"{model_name}_best.pth"
+            model_path = self.experiment_dir / f"{model_name}_best.pth"
             torch.save({
                 'model_state_dict': best_model_state,
                 'model_config': model.config,
@@ -270,8 +275,25 @@ class BaselineTrainer:
         """
         Run complete baseline experiment for all 9 models
         """
+        # Track experiment start time and parameters
+        self.experiment_start_time = datetime.now()
+        self.experiment_params = {
+            'train_split': train_split,
+            'epochs': epochs,
+            'lr': lr,
+            'batch_size': batch_size,
+            'patience': patience
+        }
+        
+        # Create timestamped experiment directory
+        timestamp = self.experiment_start_time.strftime("%d-%m-%Y--%H-%M-%S")
+        self.experiment_dir = self.results_dir / timestamp
+        self.experiment_dir.mkdir(parents=True, exist_ok=True)
+        
         print("🎯 STARTING BASELINE EXPERIMENT")
         print("=" * 60)
+        print(f"Experiment Directory: {self.experiment_dir}")
+        print(f"Start Time: {self.experiment_start_time.strftime('%Y-%m-%d %H:%M:%S')}")
         print(f"Training parameters:")
         print(f"  Train/Test split: {train_split*100:.0f}%/{(1-train_split)*100:.0f}%")
         print(f"  Epochs: {epochs} (patience: {patience})")
@@ -339,10 +361,29 @@ class BaselineTrainer:
         # Generate comparison report
         self._generate_comparison_report(all_results)
         
+        # Save experiment summary
+        self._save_experiment_summary(all_results)
+        
         return all_results
         
     def _save_results(self, results: Dict[str, Any]):
         """Save results to JSON file"""
+        
+        def convert_to_serializable(obj):
+            """Convert numpy types to Python native types for JSON serialization"""
+            if isinstance(obj, np.integer):
+                return int(obj)
+            elif isinstance(obj, np.floating):
+                return float(obj)
+            elif isinstance(obj, np.ndarray):
+                return obj.tolist()
+            elif isinstance(obj, dict):
+                return {key: convert_to_serializable(value) for key, value in obj.items()}
+            elif isinstance(obj, list):
+                return [convert_to_serializable(item) for item in obj]
+            else:
+                return obj
+        
         # Convert any non-serializable objects
         serializable_results = {}
         for model_type, model_results in results.items():
@@ -351,16 +392,15 @@ class BaselineTrainer:
                 serializable_results[model_type][layer_config] = {
                     'model_info': {
                         'model_type': result['model_info']['model_type'],
-                        'num_parameters': result['model_info']['num_parameters'],
+                        'num_parameters': int(result['model_info']['num_parameters']),
                         'expected_input_shape': result['model_info']['expected_input_shape']
                     },
-                    'training': result['training'],
-                    'test_metrics': result['test_metrics']
+                    'training': convert_to_serializable(result['training']),
+                    'test_metrics': convert_to_serializable(result['test_metrics'])
                 }
         
-        # Save with timestamp
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        results_file = self.results_dir / f"baseline_results_{timestamp}.json"
+        # Save to timestamped experiment directory
+        results_file = self.experiment_dir / "baseline_results.json"
         
         with open(results_file, 'w') as f:
             json.dump(serializable_results, f, indent=2)
@@ -412,4 +452,109 @@ class BaselineTrainer:
         print(f"   Lowest RMSE: {best_rmse_model['Model']} ({best_rmse_model['Layers']} layers) - RMSE = {best_rmse_model['RMSE']}")
         
         print(f"\n✅ Baseline experiment completed!")
-        self.results = results 
+        self.results = results
+        
+    def _save_experiment_summary(self, results: Dict[str, Any]):
+        """Save a comprehensive experiment summary to a text file"""
+        experiment_end_time = datetime.now()
+        total_duration = experiment_end_time - self.experiment_start_time
+        
+        summary_file = self.experiment_dir / "experiment_summary.txt"
+        
+        with open(summary_file, 'w') as f:
+            # Header
+            f.write("🧠 NEURAL DECODING BASELINE EXPERIMENT SUMMARY\n")
+            f.write("=" * 60 + "\n\n")
+            
+            # Experiment metadata
+            f.write("📅 EXPERIMENT DETAILS\n")
+            f.write("-" * 30 + "\n")
+            f.write(f"Start Time: {self.experiment_start_time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(f"End Time: {experiment_end_time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(f"Total Duration: {str(total_duration).split('.')[0]}\n")
+            f.write(f"Experiment Directory: {self.experiment_dir.name}\n\n")
+            
+            # Dataset information
+            f.write("📊 DATASET INFORMATION\n")
+            f.write("-" * 30 + "\n")
+            f.write(f"Flat Data Shape: {self.X_flat.shape}\n")
+            f.write(f"Sequential Data Shape: {self.X_seq.shape}\n")
+            f.write(f"Target Shape: {self.y_flat.shape}\n")
+            f.write(f"Position Range: {np.min(self.y_flat):.1f} to {np.max(self.y_flat):.1f}\n")
+            f.write(f"Number of Features (per time bin): {self.X_seq.shape[2]}\n")
+            f.write(f"Sequence Length: {self.X_seq.shape[1]} time bins\n\n")
+            
+            # Training parameters
+            f.write("⚙️ TRAINING PARAMETERS\n")
+            f.write("-" * 30 + "\n")
+            for param, value in self.experiment_params.items():
+                f.write(f"{param.replace('_', ' ').title()}: {value}\n")
+            f.write(f"Device: {self.device}\n")
+            if self.device.type == "cuda":
+                f.write(f"GPU: {torch.cuda.get_device_name()}\n")
+            f.write("\n")
+            
+            # Model architectures summary
+            f.write("🏗️ MODEL ARCHITECTURES\n")
+            f.write("-" * 30 + "\n")
+            for model_type in ['MLP', 'RNN', 'LSTM']:
+                f.write(f"\n{model_type} Models:\n")
+                for layer_config in ['1_layer', '2_layer', '3_layer']:
+                    result = results[model_type][layer_config]
+                    f.write(f"  {layer_config}: {result['model_info']['num_parameters']:,} parameters\n")
+            f.write("\n")
+            
+            # Results table
+            f.write("🏆 RESULTS SUMMARY\n")
+            f.write("-" * 30 + "\n")
+            
+            # Create comparison table (same as console output)
+            rows = []
+            for model_type in ['MLP', 'RNN', 'LSTM']:
+                for layer_config in ['1_layer', '2_layer', '3_layer']:
+                    result = results[model_type][layer_config]
+                    rows.append({
+                        'Model': f"{model_type}",
+                        'Layers': layer_config.replace('_layer', ''),
+                        'Params': f"{result['model_info']['num_parameters']:,}",
+                        'R²': f"{result['test_metrics']['r2']:.4f}",
+                        'RMSE': f"{result['test_metrics']['rmse']:.2f}",
+                        'MAE': f"{result['test_metrics']['mae']:.2f}",
+                        'Corr': f"{result['test_metrics']['correlation']:.4f}",
+                        'Time(s)': f"{result['training']['training_time']:.1f}",
+                        'Epochs': f"{result['training']['epochs_trained']}"
+                    })
+            
+            # Write table headers
+            headers = ['Model', 'Layers', 'Params', 'R²', 'RMSE', 'MAE', 'Corr', 'Time(s)', 'Epochs']
+            col_widths = [max(len(str(row[h])) for row in rows + [dict(zip(headers, headers))]) for h in headers]
+            
+            # Header line
+            header_line = " | ".join(h.ljust(w) for h, w in zip(headers, col_widths))
+            f.write(header_line + "\n")
+            f.write("-" * len(header_line) + "\n")
+            
+            # Data rows
+            for row in rows:
+                row_line = " | ".join(str(row[h]).ljust(w) for h, w in zip(headers, col_widths))
+                f.write(row_line + "\n")
+            
+            # Best models
+            best_r2_model = max(rows, key=lambda x: float(x['R²']))
+            best_rmse_model = min(rows, key=lambda x: float(x['RMSE']))
+            fastest_model = min(rows, key=lambda x: float(x['Time(s)']))
+            
+            f.write(f"\n🥇 BEST PERFORMING MODELS\n")
+            f.write("-" * 30 + "\n")
+            f.write(f"Highest R²: {best_r2_model['Model']} ({best_r2_model['Layers']} layers) - R² = {best_r2_model['R²']}\n")
+            f.write(f"Lowest RMSE: {best_rmse_model['Model']} ({best_rmse_model['Layers']} layers) - RMSE = {best_rmse_model['RMSE']}\n")
+            f.write(f"Fastest Training: {fastest_model['Model']} ({fastest_model['Layers']} layers) - {fastest_model['Time(s)']}s\n")
+            
+            # Total training time
+            total_training_time = sum(float(row['Time(s)']) for row in rows)
+            f.write(f"\nTotal Training Time: {total_training_time:.1f} seconds ({total_training_time/60:.1f} minutes)\n")
+            
+            f.write(f"\n✅ Experiment completed successfully!\n")
+            f.write(f"📁 All files saved in: {self.experiment_dir}\n")
+        
+        print(f"📄 Experiment summary saved to: {summary_file}") 
