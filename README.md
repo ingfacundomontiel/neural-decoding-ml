@@ -29,6 +29,7 @@ requirements.txt       # (To be completed later) Project dependencies
 - Train each model with preprocessed data using fixed hyperparameters.
 - Establish baseline performance for each model.
 - Evaluate and compare initial results.
+- Normalize data
 
 ### Stage 2: Simple Hyperparameter Optimization
 - Perform a limited **Grid Search** over a selected set of hyperparameters.
