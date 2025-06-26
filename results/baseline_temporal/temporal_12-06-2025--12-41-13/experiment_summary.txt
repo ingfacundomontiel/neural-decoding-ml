@@ -1,0 +1,23 @@
+CORRECTED BASELINE EXPERIMENT RESULTS (TEMPORAL SPLITTING)
+============================================================
+Experiment Time: 2025-06-12 12:41:13.056225
+Splitting Method: TEMPORAL/CONTIGUOUS (fixes data leakage)
+Parameters: {'train_split': 0.8, 'epochs': 200, 'lr': 0.001, 'batch_size': 64, 'patience': 20, 'splitting_method': 'TEMPORAL_CONTIGUOUS'}
+
+PERFORMANCE SUMMARY:
+--------------------
+
+MLP MODELS:
+  1_layer: R² = -53.2516, RMSE = 48.24
+  2_layer: R² = -54.5608, RMSE = 48.82
+  3_layer: R² = -57.9556, RMSE = 50.29
+
+RNN MODELS:
+  1_layer: R² = -58.5357, RMSE = 50.53
+  2_layer: R² = -63.5300, RMSE = 52.61
+  3_layer: R² = -55.1540, RMSE = 49.08
+
+LSTM MODELS:
+  1_layer: R² = -65.4341, RMSE = 53.38
+  2_layer: R² = -61.1271, RMSE = 51.62
+  3_layer: R² = -57.8770, RMSE = 50.25
