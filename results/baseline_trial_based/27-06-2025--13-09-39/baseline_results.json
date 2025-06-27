@@ -1,0 +1,179 @@
+{
+  "MLP": {
+    "1_layer": {
+      "model_info": {
+        "model_type": "MLP",
+        "num_parameters": 70657,
+        "expected_input_shape": "[batch_size, 550]"
+      },
+      "training": {
+        "best_val_loss": 25658.288804408483,
+        "training_time": 17.212703227996826,
+        "epochs_trained": 134
+      },
+      "test_metrics": {
+        "r2": 0.4018097519874573,
+        "rmse": 175.70227948329241,
+        "mae": 131.65956115722656,
+        "correlation": 0.6617437601089478,
+        "mean_relative_error": 61079687168.0
+      }
+    },
+    "2_layer": {
+      "model_info": {
+        "model_type": "MLP",
+        "num_parameters": 78849,
+        "expected_input_shape": "[batch_size, 550]"
+      },
+      "training": {
+        "best_val_loss": 25268.914264787945,
+        "training_time": 7.768935918807983,
+        "epochs_trained": 56
+      },
+      "test_metrics": {
+        "r2": 0.3872925639152527,
+        "rmse": 177.82151229357768,
+        "mae": 132.37307739257812,
+        "correlation": 0.6654421091079712,
+        "mean_relative_error": 55870246912.0
+      }
+    },
+    "3_layer": {
+      "model_info": {
+        "model_type": "MLP",
+        "num_parameters": 80897,
+        "expected_input_shape": "[batch_size, 550]"
+      },
+      "training": {
+        "best_val_loss": 25893.74739815848,
+        "training_time": 7.584608554840088,
+        "epochs_trained": 47
+      },
+      "test_metrics": {
+        "r2": 0.4259880781173706,
+        "rmse": 172.11478160482034,
+        "mae": 119.85299682617188,
+        "correlation": 0.6869257092475891,
+        "mean_relative_error": 54930763776.0
+      }
+    }
+  },
+  "RNN": {
+    "1_layer": {
+      "model_info": {
+        "model_type": "RNN_RNN",
+        "num_parameters": 7489,
+        "expected_input_shape": "[batch_size, 11, 50]"
+      },
+      "training": {
+        "best_val_loss": 33761.095912388395,
+        "training_time": 17.039429903030396,
+        "epochs_trained": 106
+      },
+      "test_metrics": {
+        "r2": 0.341732919216156,
+        "rmse": 184.31419548219827,
+        "mae": 121.75537109375,
+        "correlation": 0.6288770437240601,
+        "mean_relative_error": 63947673600.0
+      }
+    },
+    "2_layer": {
+      "model_info": {
+        "model_type": "RNN_RNN",
+        "num_parameters": 15809,
+        "expected_input_shape": "[batch_size, 11, 50]"
+      },
+      "training": {
+        "best_val_loss": 47464.14970528739,
+        "training_time": 17.24948787689209,
+        "epochs_trained": 97
+      },
+      "test_metrics": {
+        "r2": -0.010883450508117676,
+        "rmse": 228.40639323090323,
+        "mae": 200.98426818847656,
+        "correlation": 0.13287606835365295,
+        "mean_relative_error": 59521048576.0
+      }
+    },
+    "3_layer": {
+      "model_info": {
+        "model_type": "RNN_RNN",
+        "num_parameters": 24129,
+        "expected_input_shape": "[batch_size, 11, 50]"
+      },
+      "training": {
+        "best_val_loss": 51791.91178850446,
+        "training_time": 17.993886470794678,
+        "epochs_trained": 95
+      },
+      "test_metrics": {
+        "r2": -0.013547420501708984,
+        "rmse": 228.70715958130825,
+        "mae": 200.85948181152344,
+        "correlation": -0.0006572417914867401,
+        "mean_relative_error": 58839789568.0
+      }
+    }
+  },
+  "LSTM": {
+    "1_layer": {
+      "model_info": {
+        "model_type": "LSTM",
+        "num_parameters": 29761,
+        "expected_input_shape": "[batch_size, 11, 50]"
+      },
+      "training": {
+        "best_val_loss": 34474.61787109375,
+        "training_time": 17.99858021736145,
+        "epochs_trained": 101
+      },
+      "test_metrics": {
+        "r2": 0.40974241495132446,
+        "rmse": 174.53338461093912,
+        "mae": 107.38275146484375,
+        "correlation": 0.6737298965454102,
+        "mean_relative_error": 56319201280.0
+      }
+    },
+    "2_layer": {
+      "model_info": {
+        "model_type": "LSTM",
+        "num_parameters": 63041,
+        "expected_input_shape": "[batch_size, 11, 50]"
+      },
+      "training": {
+        "best_val_loss": 31001.049731445313,
+        "training_time": 22.876671075820923,
+        "epochs_trained": 117
+      },
+      "test_metrics": {
+        "r2": 0.49970948696136475,
+        "rmse": 160.6826015394946,
+        "mae": 91.22504425048828,
+        "correlation": 0.7307093739509583,
+        "mean_relative_error": 53738303488.0
+      }
+    },
+    "3_layer": {
+      "model_info": {
+        "model_type": "LSTM",
+        "num_parameters": 96321,
+        "expected_input_shape": "[batch_size, 11, 50]"
+      },
+      "training": {
+        "best_val_loss": 27273.914243861607,
+        "training_time": 35.36906886100769,
+        "epochs_trained": 158
+      },
+      "test_metrics": {
+        "r2": 0.44375044107437134,
+        "rmse": 169.43088330865186,
+        "mae": 93.65266418457031,
+        "correlation": 0.707115888595581,
+        "mean_relative_error": 45523083264.0
+      }
+    }
+  }
+}
