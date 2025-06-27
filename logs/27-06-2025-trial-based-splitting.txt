@@ -1,0 +1,175 @@
+===================================================
+NEURAL DECODING PROJECT LOG
+===================================================
+Date: 27 June 2025
+Topic: Trial-Based Data Splitting Implementation
+Author: Assistant (Claude) + User collaboration
+===================================================
+
+OVERVIEW:
+---------
+Successfully implemented trial-based data splitting as an alternative to time-bin based splitting for neural decoding experiments. 
+This addresses data leakage issues and provides more scientifically rigorous model evaluation.
+
+PROBLEM IDENTIFIED:
+------------------
+- Original baseline experiments used time-bin based random splitting
+- This caused data leakage: time bins from same trial could end up in different sets (train/test)
+- Result: Inflated performance metrics due to temporal correlations within trials
+- Scientific validity: Questionable for publication/real-world applicability
+
+SOLUTION IMPLEMENTED:
+--------------------
+Trial-based splitting that:
+✓ Splits 119 trials (not 12,203 individual time bins) into train/val/test
+✓ Keeps all time bins from each trial together in same set
+✓ Eliminates data leakage completely
+✓ Provides realistic performance evaluation
+✓ Maintains experimental trial structure integrity
+
+FILES MODIFIED/CREATED:
+----------------------
+
+1. utils/data_utils.py
+   - Added analyze_trial_characteristics() function
+   - Added create_trial_based_data_loaders() function
+   - Supports stratified trial splitting by duration
+   - Comprehensive split reporting and analysis
+
+2. baseline_trainer.py
+   - Modified _load_data() to handle trial_ids gracefully
+   - Modified _get_data_for_model() to return trial_ids
+   - Added trial_based_split parameter to run_baseline_experiment()
+   - Enhanced logging to show splitting method
+   - Automatic fallback to time-bin splitting if trial_ids unavailable
+
+3. run_baseline_trial_based.py (NEW)
+   - Dedicated script for trial-based experiments
+   - Clear documentation and error handling
+   - Results saved to results/baseline_trial_based/
+
+4. compare_splitting_methods.py (NEW)
+   - Side-by-side comparison of both splitting methods
+   - Quantitative analysis of data leakage impact
+   - Pandas-based result tables and statistics
+
+5. TRIAL_BASED_SPLITTING.md (NEW)
+   - Comprehensive documentation
+   - Usage examples and best practices
+   - Scientific background and justification
+
+TECHNICAL IMPLEMENTATION:
+------------------------
+
+Trial Analysis:
+- 119 unique trials in dataset
+- Trial durations: 5.8s to 58.4s (mean: 20.5 ± 10.7s)
+- Trial lengths: 29 to 292 bins (mean: 102.5 ± 53.3 bins)
+- Total samples: 12,203 time bins
+
+Split Strategy:
+- 73 trials (7,820 samples, 64.1%) → Training
+- 23 trials (2,213 samples, 18.1%) → Validation  
+- 23 trials (2,170 samples, 17.8%) → Testing
+- Stratified by duration to balance trial lengths across splits
+
+EXPERIMENTAL RESULTS:
+--------------------
+
+Trial-Based Experiment Results (27-06-2025 13:09:39):
+Model Performance on Test Set:
+
+Best Performers:
+- LSTM 2-layer: R² = 0.4997, RMSE = 160.68, MAE = 91.23, Corr = 0.7307
+- MLP 3-layer:   R² = 0.4260, RMSE = 172.11, MAE = 119.85, Corr = 0.6869
+- LSTM 3-layer:  R² = 0.4438, RMSE = 169.43, MAE = 93.65, Corr = 0.7071
+
+Full Results:
+MLP_1_layer:  R² = 0.4018, RMSE = 175.70, MAE = 131.66, Corr = 0.6617
+MLP_2_layer:  R² = 0.3873, RMSE = 177.82, MAE = 132.37, Corr = 0.6654  
+MLP_3_layer:  R² = 0.4260, RMSE = 172.11, MAE = 119.85, Corr = 0.6869
+RNN_1_layer:  R² = 0.3417, RMSE = 184.31, MAE = 121.76, Corr = 0.6289
+RNN_2_layer:  R² = -0.0109, RMSE = 228.41, MAE = 200.98, Corr = 0.1329
+RNN_3_layer:  R² = -0.0135, RMSE = 228.71, MAE = 200.86, Corr = -0.0007
+LSTM_1_layer: R² = 0.4097, RMSE = 174.53, MAE = 107.38, Corr = 0.6737
+LSTM_2_layer: R² = 0.4997, RMSE = 160.68, MAE = 91.23, Corr = 0.7307
+LSTM_3_layer: R² = 0.4438, RMSE = 169.43, MAE = 93.65, Corr = 0.7071
+
+KEY INSIGHTS:
+------------
+1. LSTM models perform best for this neural decoding task
+2. 2-layer LSTM achieves optimal complexity (best R² = 0.4997)
+3. RNN models show poor performance (likely vanishing gradient issues)
+4. MLP models show consistent moderate performance across layer counts
+5. Trial-based splitting provides realistic performance estimates
+
+SCIENTIFIC IMPACT:
+-----------------
+✓ Eliminates data leakage in neural decoding experiments
+✓ Provides publication-ready experimental methodology
+✓ Enables proper trial-aware cross-validation
+✓ Maintains behavioral trial structure integrity
+✓ Allows realistic assessment of model generalization to new trials
+
+EXPECTED PERFORMANCE COMPARISON:
+-------------------------------
+Time-bin splitting (with data leakage):
+- Expected to show HIGHER R² values (inflated)
+- Expected to show LOWER RMSE values (overly optimistic)
+- May overestimate model performance by ~0.05-0.10 R² points
+
+Trial-based splitting (no data leakage):
+- Shows LOWER but REALISTIC R² values  
+- Shows HIGHER but REALISTIC RMSE values
+- Provides conservative, scientifically sound estimates
+
+USAGE RECOMMENDATIONS:
+---------------------
+1. ALWAYS use trial_based_split=True for rigorous experiments
+2. Compare models only within same splitting method
+3. Report trial-based results in publications
+4. Use time-bin splitting only for initial rapid prototyping
+5. Consider cross-validation across trial subsets for robust evaluation
+
+FUTURE WORK:
+-----------
+- Implement k-fold cross-validation with trial-based splits
+- Add support for stratified splitting by other trial characteristics
+- Investigate trial-specific performance patterns
+- Compare with other neural decoding datasets
+- Implement temporal cross-validation (train on early trials, test on late trials)
+
+TECHNICAL NOTES:
+---------------
+- Trial IDs successfully loaded from preprocessed data files
+- Stratified splitting balances trial durations across sets
+- GPU acceleration maintained (NVIDIA GeForce RTX 3060)
+- Memory efficient implementation with no data duplication
+- Backward compatibility with existing preprocessing pipeline
+
+VALIDATION:
+----------
+✓ Trial IDs correctly parsed from preprocessed data
+✓ Split statistics verified (119 trials correctly divided)
+✓ No trial overlap between train/val/test sets confirmed
+✓ Sample counts match expected proportions
+✓ Duration balance achieved across splits
+✓ Model training completed successfully for all 9 baseline models
+✓ Results saved with comprehensive metadata
+
+COLLABORATION NOTES:
+-------------------
+- User identified the need for trial-based splitting
+- Collaborative development of strategy and implementation
+- User provided domain expertise on neural decoding requirements
+- Assistant implemented technical solution with comprehensive testing
+- Solution ready for immediate scientific use
+
+===================================================
+STATUS: COMPLETE ✓
+TESTED: YES ✓  
+DOCUMENTED: YES ✓
+READY FOR PRODUCTION: YES ✓
+===================================================
+
+End of Log - 27 June 2025 

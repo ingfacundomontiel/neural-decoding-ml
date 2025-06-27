@@ -13,13 +13,14 @@ from datetime import datetime
 import time
 
 from models import create_baseline_models, get_model_summary
-from utils.data_utils import create_data_loaders
+from utils.data_utils import create_data_loaders, create_trial_based_data_loaders
 
 
 class BaselineTrainer:
     """
     Comprehensive trainer for neural decoding baseline experiments.
     Handles MLP, RNN, and LSTM models with GPU support and full evaluation.
+    Supports both time-bin based and trial-based data splitting.
     """
     
     def __init__(self, 
@@ -62,12 +63,28 @@ class BaselineTrainer:
         # Load flat data for MLP
         with open(self.data_path_flat, 'rb') as f:
             flat_data = pickle.load(f)
-            self.X_flat, _, self.y_flat = flat_data
+            if len(flat_data) == 4:
+                self.X_flat, _, self.y_flat, self.trial_ids_flat = flat_data
+            elif len(flat_data) == 3:
+                # Current format: (X, y, trial_ids)
+                self.X_flat, self.y_flat, self.trial_ids_flat = flat_data
+            else:
+                # Handle legacy format without trial_ids
+                self.X_flat, _, self.y_flat = flat_data
+                self.trial_ids_flat = None
             
         # Load sequential data for RNN/LSTM  
         with open(self.data_path_sequential, 'rb') as f:
             seq_data = pickle.load(f)
-            self.X_seq, _, self.y_seq = seq_data
+            if len(seq_data) == 4:
+                self.X_seq, _, self.y_seq, self.trial_ids_seq = seq_data
+            elif len(seq_data) == 3:
+                # Current format: (X, y, trial_ids)
+                self.X_seq, self.y_seq, self.trial_ids_seq = seq_data
+            else:
+                # Handle legacy format without trial_ids
+                self.X_seq, _, self.y_seq = seq_data
+                self.trial_ids_seq = None
             
         # Use the flat y for consistency (remove extra dimension if present)
         if self.y_flat.ndim > 1:
@@ -79,12 +96,17 @@ class BaselineTrainer:
         print(f"   Sequential data: X{self.X_seq.shape}, y{self.y_seq.shape}")
         print(f"   Position range: {np.min(self.y_flat):.1f} to {np.max(self.y_flat):.1f}")
         
-    def _get_data_for_model(self, model_type: str) -> Tuple[np.ndarray, np.ndarray]:
+        if self.trial_ids_flat is not None:
+            print(f"   Trial IDs: {len(np.unique(self.trial_ids_flat))} unique trials")
+        else:
+            print("   ⚠️  No trial IDs found - will use time-bin based splitting only")
+        
+    def _get_data_for_model(self, model_type: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Get appropriate data format for model type"""
         if model_type == "MLP":
-            return self.X_flat, self.y_flat
+            return self.X_flat, self.y_flat, self.trial_ids_flat
         else:  # RNN or LSTM
-            return self.X_seq, self.y_seq
+            return self.X_seq, self.y_seq, self.trial_ids_seq
             
     def _calculate_metrics(self, y_true: np.ndarray, y_pred: np.ndarray) -> Dict[str, float]:
         """Calculate comprehensive evaluation metrics"""
@@ -271,10 +293,25 @@ class BaselineTrainer:
                               epochs: int = 200,
                               lr: float = 1e-3,
                               batch_size: int = 64,
-                              patience: int = 20) -> Dict[str, Any]:
+                              patience: int = 20,
+                              trial_based_split: bool = False) -> Dict[str, Any]:
         """
         Run complete baseline experiment for all 9 models
+        
+        Args:
+            train_split: Fraction of data/trials for training
+            epochs: Maximum training epochs
+            lr: Learning rate
+            batch_size: Batch size
+            patience: Early stopping patience
+            trial_based_split: If True, split by trials instead of time bins
         """
+        # Check if trial-based split is requested but not available
+        if trial_based_split and self.trial_ids_flat is None:
+            print("⚠️  Trial-based split requested but no trial IDs available!")
+            print("   Falling back to time-bin based splitting...")
+            trial_based_split = False
+        
         # Track experiment start time and parameters
         self.experiment_start_time = datetime.now()
         self.experiment_params = {
@@ -282,7 +319,8 @@ class BaselineTrainer:
             'epochs': epochs,
             'lr': lr,
             'batch_size': batch_size,
-            'patience': patience
+            'patience': patience,
+            'trial_based_split': trial_based_split
         }
         
         # Create timestamped experiment directory
@@ -290,12 +328,14 @@ class BaselineTrainer:
         self.experiment_dir = self.results_dir / timestamp
         self.experiment_dir.mkdir(parents=True, exist_ok=True)
         
-        print("🎯 STARTING BASELINE EXPERIMENT")
-        print("=" * 60)
+        split_method = "TRIAL-BASED" if trial_based_split else "TIME-BIN BASED"
+        print(f"🎯 STARTING BASELINE EXPERIMENT ({split_method} SPLITTING)")
+        print("=" * 70)
         print(f"Experiment Directory: {self.experiment_dir}")
         print(f"Start Time: {self.experiment_start_time.strftime('%Y-%m-%d %H:%M:%S')}")
         print(f"Training parameters:")
         print(f"  Train/Test split: {train_split*100:.0f}%/{(1-train_split)*100:.0f}%")
+        print(f"  Splitting method: {split_method}")
         print(f"  Epochs: {epochs} (patience: {patience})")
         print(f"  Learning rate: {lr}")
         print(f"  Batch size: {batch_size}")
@@ -315,14 +355,24 @@ class BaselineTrainer:
             print("-" * 40)
             
             # Get appropriate data format
-            X, y = self._get_data_for_model(model_type)
+            X, y, trial_ids = self._get_data_for_model(model_type)
             
-            # Create data loaders
-            train_loader, val_loader, test_loader = create_data_loaders(
-                X, y, model_type, batch_size=batch_size,
-                validation_split=0.2, test_split=1-train_split,
-                shuffle=True, random_seed=42
-            )
+            # Create data loaders based on splitting method
+            if trial_based_split:
+                train_loader, val_loader, test_loader, split_info = create_trial_based_data_loaders(
+                    X, y, trial_ids, model_type, batch_size=batch_size,
+                    validation_split=0.2, test_split=1-train_split,
+                    shuffle=True, random_seed=42
+                )
+                # Store split info for this model type (first time)
+                if model_type == 'MLP':
+                    self.trial_split_info = split_info
+            else:
+                train_loader, val_loader, test_loader = create_data_loaders(
+                    X, y, model_type, batch_size=batch_size,
+                    validation_split=0.2, test_split=1-train_split,
+                    shuffle=True, random_seed=42
+                )
             
             model_results = {}
             
@@ -482,7 +532,8 @@ class BaselineTrainer:
             f.write(f"Target Shape: {self.y_flat.shape}\n")
             f.write(f"Position Range: {np.min(self.y_flat):.1f} to {np.max(self.y_flat):.1f}\n")
             f.write(f"Number of Features (per time bin): {self.X_seq.shape[2]}\n")
-            f.write(f"Sequence Length: {self.X_seq.shape[1]} time bins\n\n")
+            f.write(f"Sequence Length: {self.X_seq.shape[1]} time bins\n")
+            f.write(f"Trial IDs: {len(np.unique(self.trial_ids_flat))} unique trials\n\n")
             
             # Training parameters
             f.write("⚙️ TRAINING PARAMETERS\n")

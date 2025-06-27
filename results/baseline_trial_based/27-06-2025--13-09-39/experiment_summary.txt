@@ -1,0 +1,73 @@
+🧠 NEURAL DECODING BASELINE EXPERIMENT SUMMARY
+============================================================
+
+📅 EXPERIMENT DETAILS
+------------------------------
+Start Time: 2025-06-27 13:09:39
+End Time: 2025-06-27 13:12:21
+Total Duration: 0:02:41
+Experiment Directory: 27-06-2025--13-09-39
+
+📊 DATASET INFORMATION
+------------------------------
+Flat Data Shape: (12203, 550)
+Sequential Data Shape: (12203, 11, 50)
+Target Shape: (12203,)
+Position Range: -1.0 to 831.0
+Number of Features (per time bin): 50
+Sequence Length: 11 time bins
+Trial IDs: 119 unique trials
+
+⚙️ TRAINING PARAMETERS
+------------------------------
+Train Split: 0.8
+Epochs: 200
+Lr: 0.001
+Batch Size: 64
+Patience: 20
+Trial Based Split: True
+Device: cuda
+GPU: NVIDIA GeForce RTX 3060
+
+🏗️ MODEL ARCHITECTURES
+------------------------------
+
+MLP Models:
+  1_layer: 70,657 parameters
+  2_layer: 78,849 parameters
+  3_layer: 80,897 parameters
+
+RNN Models:
+  1_layer: 7,489 parameters
+  2_layer: 15,809 parameters
+  3_layer: 24,129 parameters
+
+LSTM Models:
+  1_layer: 29,761 parameters
+  2_layer: 63,041 parameters
+  3_layer: 96,321 parameters
+
+🏆 RESULTS SUMMARY
+------------------------------
+Model | Layers | Params | R²      | RMSE   | MAE    | Corr    | Time(s) | Epochs
+--------------------------------------------------------------------------------
+MLP   | 1      | 70,657 | 0.4018  | 175.70 | 131.66 | 0.6617  | 17.2    | 134   
+MLP   | 2      | 78,849 | 0.3873  | 177.82 | 132.37 | 0.6654  | 7.8     | 56    
+MLP   | 3      | 80,897 | 0.4260  | 172.11 | 119.85 | 0.6869  | 7.6     | 47    
+RNN   | 1      | 7,489  | 0.3417  | 184.31 | 121.76 | 0.6289  | 17.0    | 106   
+RNN   | 2      | 15,809 | -0.0109 | 228.41 | 200.98 | 0.1329  | 17.2    | 97    
+RNN   | 3      | 24,129 | -0.0135 | 228.71 | 200.86 | -0.0007 | 18.0    | 95    
+LSTM  | 1      | 29,761 | 0.4097  | 174.53 | 107.38 | 0.6737  | 18.0    | 101   
+LSTM  | 2      | 63,041 | 0.4997  | 160.68 | 91.23  | 0.7307  | 22.9    | 117   
+LSTM  | 3      | 96,321 | 0.4438  | 169.43 | 93.65  | 0.7071  | 35.4    | 158   
+
+🥇 BEST PERFORMING MODELS
+------------------------------
+Highest R²: LSTM (2 layers) - R² = 0.4997
+Lowest RMSE: LSTM (2 layers) - RMSE = 160.68
+Fastest Training: MLP (3 layers) - 7.6s
+
+Total Training Time: 161.1 seconds (2.7 minutes)
+
+✅ Experiment completed successfully!
+📁 All files saved in: results/baseline_trial_based/27-06-2025--13-09-39
