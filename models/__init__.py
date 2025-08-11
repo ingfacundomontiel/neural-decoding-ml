@@ -1,4 +1,4 @@
-from .MLP import MLP
+from .mlp import MLP
 from .rnn import RNN
 from .lstm import LSTM
 from .base_model import BaseNeuralDecoder

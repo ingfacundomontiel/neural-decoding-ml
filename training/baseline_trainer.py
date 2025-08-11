@@ -13,7 +13,8 @@ from datetime import datetime
 import time
 
 from models import create_baseline_models, get_model_summary
-from utils.data_utils import create_data_loaders
+from utils.data_utils import create_data_loaders, create_trial_based_data_loaders
+from utils.temporal_data_utils import create_temporal_data_loaders
 
 
 class BaselineTrainer:
@@ -57,12 +58,14 @@ class BaselineTrainer:
         # Load flat data for MLP
         with open(self.data_path_flat, 'rb') as f:
             flat_data = pickle.load(f)
-            self.X_flat, _, self.y_flat = flat_data
+            # Expected tuple order: (X, y, trial_ids)
+            self.X_flat, self.y_flat, self.trial_ids_flat = flat_data
             
         # Load sequential data for RNN/LSTM  
         with open(self.data_path_sequential, 'rb') as f:
             seq_data = pickle.load(f)
-            self.X_seq, _, self.y_seq = seq_data
+            # Expected tuple order: (X, y, trial_ids)
+            self.X_seq, self.y_seq, self.trial_ids_seq = seq_data
             
         # Use the flat y for consistency (remove extra dimension if present)
         if self.y_flat.ndim > 1:
@@ -266,9 +269,18 @@ class BaselineTrainer:
                               epochs: int = 200,
                               lr: float = 1e-3,
                               batch_size: int = 64,
-                              patience: int = 20) -> Dict[str, Any]:
+                              patience: int = 20,
+                              splitting: str = "timebin") -> Dict[str, Any]:
         """
         Run complete baseline experiment for all 9 models
+        
+        Args:
+            train_split: fraction of data (or trials) for training
+            epochs: max epochs
+            lr: learning rate
+            batch_size: batch size
+            patience: early stopping patience
+            splitting: one of {"timebin", "temporal", "trial"}
         """
         print("🎯 STARTING BASELINE EXPERIMENT")
         print("=" * 60)
@@ -277,6 +289,7 @@ class BaselineTrainer:
         print(f"  Epochs: {epochs} (patience: {patience})")
         print(f"  Learning rate: {lr}")
         print(f"  Batch size: {batch_size}")
+        print(f"  Splitting: {splitting}")
         
         all_results = {}
         
@@ -294,13 +307,31 @@ class BaselineTrainer:
             
             # Get appropriate data format
             X, y = self._get_data_for_model(model_type)
-            
-            # Create data loaders
-            train_loader, val_loader, test_loader = create_data_loaders(
-                X, y, model_type, batch_size=batch_size,
-                validation_split=0.2, test_split=1-train_split,
-                shuffle=True, random_seed=42
-            )
+            # Choose splitting strategy
+            if splitting == "timebin":
+                train_loader, val_loader, test_loader = create_data_loaders(
+                    X, y, model_type, batch_size=batch_size,
+                    validation_split=0.2, test_split=1-train_split,
+                    shuffle=True, random_seed=42
+                )
+            elif splitting == "temporal":
+                train_loader, val_loader, test_loader = create_temporal_data_loaders(
+                    X, y, model_type, batch_size=batch_size,
+                    validation_split=0.2, test_split=1-train_split,
+                    random_seed=42
+                )
+            elif splitting == "trial":
+                # Select corresponding trial_ids
+                trial_ids = self.trial_ids_flat if model_type == "MLP" else self.trial_ids_seq
+                train_loader, val_loader, test_loader, split_info = create_trial_based_data_loaders(
+                    X, y, trial_ids, model_type, batch_size=batch_size,
+                    validation_split=0.2, test_split=1-train_split,
+                    shuffle=True, random_seed=42, stratify_by_duration=True
+                )
+                # Expose split info for external reporting
+                self.trial_split_info = split_info
+            else:
+                raise ValueError(f"Unsupported splitting: {splitting}")
             
             model_results = {}
             
@@ -341,6 +372,26 @@ class BaselineTrainer:
         
         return all_results
         
+    def _convert_to_serializable(self, obj):
+        """Convert numpy/torch types to native Python types for JSON serialization"""
+        import numpy as np
+        import torch
+        
+        if isinstance(obj, dict):
+            return {key: self._convert_to_serializable(value) for key, value in obj.items()}
+        elif isinstance(obj, list):
+            return [self._convert_to_serializable(item) for item in obj]
+        elif isinstance(obj, (np.integer, np.floating)):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        elif isinstance(obj, torch.Tensor):
+            return obj.detach().cpu().numpy().tolist()
+        elif isinstance(obj, (np.bool_, bool)):
+            return bool(obj)
+        else:
+            return obj
+    
     def _save_results(self, results: Dict[str, Any]):
         """Save results to JSON file"""
         # Convert any non-serializable objects
@@ -354,8 +405,8 @@ class BaselineTrainer:
                         'num_parameters': result['model_info']['num_parameters'],
                         'expected_input_shape': result['model_info']['expected_input_shape']
                     },
-                    'training': result['training'],
-                    'test_metrics': result['test_metrics']
+                    'training': self._convert_to_serializable(result['training']),
+                    'test_metrics': self._convert_to_serializable(result['test_metrics'])
                 }
         
         # Save with timestamp

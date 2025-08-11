@@ -10,6 +10,7 @@ __pycache__/
 
 # Datasets
 datasets/
+docs/
 
 # Jupyter notebooks
 *.ipynb

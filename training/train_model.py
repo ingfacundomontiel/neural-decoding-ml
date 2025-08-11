@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader, TensorDataset, random_split
 from sklearn.metrics import mean_squared_error, r2_score
 import numpy as np
 
-from models.MLP import MLP
+from models.mlp import MLP
 
 # === CONFIGURATION ===
 INPUT_SIZE = 100           # To be replaced with actual feature size

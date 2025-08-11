@@ -15,7 +15,7 @@ Key difference from run_baseline.py:
 With 80/20 train/test split (by trials) and comprehensive evaluation metrics.
 """
 
-from baseline_trainer import BaselineTrainer
+from training.baseline_trainer import BaselineTrainer
 
 
 def main():
@@ -51,7 +51,7 @@ def main():
         lr=1e-3,               # Learning rate (Adam optimizer)
         batch_size=64,          # Batch size
         patience=20,            # Early stopping patience
-        trial_based_split=True  # Use trial-based splitting
+        splitting="trial"      # Use trial-based splitting
     )
     
     print(f"\n🎉 Trial-based experiment completed successfully!")
