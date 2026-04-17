@@ -1,73 +1,86 @@
 # Neural Decoding ML
 
-## Project Overview
-This project aims to **decode the spatial position** of a mouse in a virtual reality corridor, using **neuronal activity** recorded from the **piriform cortex** during an associative task involving odors and contexts.
+Thesis codebase for neural decoding of mouse spatial position from piriform
+cortex and hippocampus recordings.
 
-The aim is to implement and compare different **Machine Learning models** to predict the animal's position based on patterns of neuronal firing.
+> **Scientific question.** Given neural activity recorded while a mouse navigates
+> a virtual-reality corridor (expert/naive piriform cortex or hippocampus CA3/DG),
+> can we decode the animal's position — and, if so, how does the decoder's
+> performance depend on brain region, number of neurons, temporal binning, and
+> trial structure?
 
----
+This is a working thesis repo. Read [`specs/`](./specs/) before doing anything else.
 
-## Project Structure
-```plaintext
-datasets/              # Processed data (.mat files)
-models/                # Model architectures (MLP, RNN, LSTM)
-training/              # Training scripts
-evaluation/            # Model evaluation scripts
-utils/                 # Preprocessing and helper functions
-experiments/           # Experiment configurations and runs
-results/               # Results and generated plots
-README.md              # This file
-requirements.txt       # (To be completed later) Project dependencies
+## Project map
+
+```
+specs/          plan, research findings, decisions, dataset inventory
+data/raw/       canonical .mat recordings (20 files)
+data/processed/ derived pickles (gitignored, reproducible)
+external/ibioml/ git submodule → facundomontiel/IBioML fork
+exploration/    Jupytext-paired .py notebooks for data exploration
+analysis/       reusable Python modules (plotting, stats) supporting exploration
+experiments/    reproducible configs — empty for now
+docs/           thesis-grade writeups (audit, findings, methods)
+tests/          unit tests for analysis/ and ibioml fixes
+_legacy/        archive of the previous neural-decoding-ml attempt
 ```
 
----
+## Getting started
 
-## Workflow Plan
+### Prerequisites
 
-### Stage 1: Baseline Models
-- Implement MLP, RNN, and LSTM models.
-- Train each model with preprocessed data using fixed hyperparameters.
-- Establish baseline performance for each model.
-- Evaluate and compare initial results.
-- Normalize data
+- macOS or Linux
+- [Homebrew](https://brew.sh) (for `uv`)
+- `git` with submodule support
+- `gh` CLI (only needed for contributing fixes back to `ibioml`)
 
-### Stage 2: Simple Hyperparameter Optimization
-- Perform a limited **Grid Search** over a selected set of hyperparameters.
-- Tune parameters such as hidden layer size, number of layers, and learning rate.
-- Retrain models and assess improvements over the baseline.
+### First-time setup
 
-### Stage 3: Cross-Validation and Advanced Optimization
-- Implement **k-fold Cross Validation** for robust performance estimates.
-- Apply **Bayesian Optimization** for intelligent hyperparameter search.
-- Evaluate improvements from fine-tuned configurations.
-- Analyze model robustness and generalization.
+```bash
+# Clone with submodules (important!)
+git clone --recurse-submodules <this-repo-url>
+cd neural-decoding-ml
 
----
+# Install uv if you don't have it
+brew install uv
 
-## Evaluation Metrics
-During the project, these metrics will be monitored:
-- Prediction accuracy.
-- Root Mean Square Error (RMSE).
-- Predicted vs. actual plots.
-- Loss and accuracy curves per epoch.
+# Create the virtualenv and install everything (pinned via uv.lock)
+uv sync
 
-(More metrics and visualizations may be added later.)
+# Verify the environment
+uv run python -c "import ibioml; print('ok')"
+```
 
----
+### If you already cloned without `--recurse-submodules`
 
-## Future Additions
-- Experiment configuration files in `.yaml` or `.json`.
-- Logging system for experiments and results.
-- Automated organization of experiment outputs.
-- Saving trained model checkpoints.
+```bash
+git submodule update --init --recursive
+uv sync
+```
 
----
+### Running a notebook
 
-## Current Status
-- Project initialized.
-- Basic data preprocessing in progress.
-- Workflow plan established and approved.
+Exploration notebooks are `.py` files (Jupytext percent format). Open them with
+JupyterLab:
 
----
+```bash
+uv run jupyter lab
+```
 
-> _"This project is both a technical challenge and an opportunity to deepen the understanding of machine learning models applied to real biological data."_
+Right-click a `.py` notebook → "Open With" → "Notebook". Jupytext pairs it with
+an `.ipynb` on the fly; edits stay in the `.py`.
+
+## Workflow snapshot
+
+- **Reading, not writing?** Start with [`specs/plan.md`](./specs/plan.md).
+- **Adding a decision?** Append to [`specs/decisions.md`](./specs/decisions.md).
+- **Fixing an `ibioml` bug?** See [`specs/fork-ibioml.md`](./specs/fork-ibioml.md)
+  for the branch + PR flow.
+- **Adding datasets?** Update [`specs/dataset-inventory.md`](./specs/dataset-inventory.md)
+  and [`data/raw/README.md`](./data/raw/README.md) together.
+
+## Status
+
+Phase 0 (bootstrap) complete. Phase 1 (dataset migration + `ibioml` audit) next.
+See [`specs/plan.md`](./specs/plan.md) for the roadmap.

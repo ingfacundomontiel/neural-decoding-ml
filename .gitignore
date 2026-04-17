@@ -1,16 +1,50 @@
-# File system:
-
-.DS_Store
-.vscode
-.venv
-.env
-venv/
+# Python
 __pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+build/
+dist/
 
+# Environments
+.venv/
+venv/
+.env
+.env.*
+!.env.example
 
-# Datasets
-datasets/
-docs/
+# uv
+# Keep uv.lock tracked for reproducibility; ignore cache
+.uv/
 
-# Jupyter notebooks
+# Notebooks — Jupytext pairs .ipynb with .py; commit .py, ignore .ipynb
+# (override per-file with `git add -f` when a notebook's output matters)
 *.ipynb
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Data
+# Raw .mat files are tracked (source of truth).
+# Processed pickles are derivable — keep them local, don't commit.
+data/processed/*
+!data/processed/.gitkeep
+
+# Results / logs — generated artifacts stay local
+results/
+logs/
+*.log
+
+# Thesis drafts / large artifacts
+*.pdf
+!docs/**/*.pdf

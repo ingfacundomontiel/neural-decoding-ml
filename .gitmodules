@@ -1,0 +1,3 @@
+[submodule "external/ibioml"]
+	path = external/ibioml
+	url = https://github.com/facundomontiel/IBioML.git

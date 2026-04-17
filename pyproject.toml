@@ -1,0 +1,59 @@
+[project]
+name = "neural-decoding-ml"
+version = "0.1.0"
+description = "Thesis codebase for neural decoding of mouse spatial position from piriform and hippocampal recordings."
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+authors = [
+    { name = "Facundo Montiel", email = "ingfacundomontiel@gmail.com" },
+]
+
+dependencies = [
+    # Core library — audited/extended fork of ibioml, local editable install
+    "ibioml[optuna]",
+    # Pin torch to last Intel-macOS compatible release (2.2.x); PyTorch dropped
+    # x86_64 macOS wheels in 2.3+. Remove/raise when we move to Apple Silicon.
+    "torch>=2.0,<2.3",
+    # torch 2.2 is compiled against NumPy 1.x; NumPy 2.x triggers runtime warnings
+    # and potential crashes. Pin can lift once torch is upgraded.
+    "numpy<2",
+    # Notebook tooling (Jupytext-paired .py + .ipynb workflow)
+    "jupyterlab>=4.0",
+    "jupytext>=1.16",
+    "ipykernel>=6.29",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "ruff>=0.6",
+]
+
+[tool.uv.sources]
+ibioml = { path = "external/ibioml", editable = true }
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "W", # pycodestyle + pyflakes
+    "I",            # isort
+    "B",            # bugbear
+    "UP",           # pyupgrade
+    "S",            # bandit security
+    "N",            # pep8-naming
+]
+ignore = [
+    "S101", # assert used — fine in tests
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101"]
+"exploration/**/*.py" = ["E402"] # allow imports below jupytext headers
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
