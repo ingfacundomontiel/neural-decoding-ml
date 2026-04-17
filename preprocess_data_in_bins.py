@@ -11,7 +11,7 @@ from utils.preprocessing_funcs import get_spikes_with_history, get_trial_bin_ind
 
 #%% 
 # Carga de datos
-mat_contents = io.loadmat('datasets/L5_bins200ms_completo.mat')
+mat_contents = io.loadmat('datasets/DG_S19_bins200ms_completo.mat')
 neural_data = mat_contents['neuronActivity'].copy()
 rewCtxt = mat_contents['rewCtxt'].copy()
 trialFinalBin = np.ravel(mat_contents['trialFinalBin'].copy())
@@ -38,7 +38,7 @@ for i, end in enumerate(trialFinalBin):
 time_bins_size = 0.2
 
 # Booleano para graficos
-plotting = False
+plotting = True
 
 #%%
 print("=== RESUMEN DE DATOS ===")
@@ -228,13 +228,16 @@ print("Trials a remover por bajo rendimiento: ", np.unique(trial_ids[indices_to_
 # GRAFICAR TRIALS CON LOW PERFORMANCE   
 plt.figure(figsize=(10, 6))
 plt.plot(dPrime, label='dPrime')
-plt.axhline(2.8, color='r', linestyle='--', label='Umbral de rendimiento')
-plt.xlabel('Índice del trial')
+plt.axhline(2.8, color='r', linestyle='--', label='Performance threshold')
+plt.xlabel('Trial index')
 plt.ylabel('dPrime')
-# x grid que marque 5 lugares equidistantes
+plt.title('dPrime by Trial - Selection Criteria')
+# x grid with 5 equally spaced ticks
 plt.xticks(np.arange(0, len(dPrime), len(dPrime)//5))
 plt.grid(True, axis='x')
 plt.legend()
+plt.tight_layout()
+plt.savefig("dprime_performance.svg", format="svg")
 plt.show()
 
 
@@ -274,53 +277,55 @@ print("Cantidad de trials finales:", len(np.unique(trial_ids)))
 
 
 #%%
-# Crear gráfico de firing rates por neurona
-firingMinimo=1000
+# Create plot of firing rates per neuron
+firingMinimo = 1000
 plt.figure(figsize=(12, 6))
 
-# Obtener firing rates de todas las neuronas (sin modificar las últimas dos)
-nd_sum_all = np.nansum(X[:,0,:], axis=0)
-nd_sum_original = nd_sum_all.copy()  # Guardar valores originales
+# Get firing rates for all neurons (without modifying the last two)
+nd_sum_all = np.nansum(X[:, 0, :], axis=0)
+nd_sum_original = nd_sum_all.copy()  # Save original values
 
-# Crear array de índices de neuronas
+# Create array of neuron indices
 neuron_indices = np.arange(len(nd_sum_all))
 
-# Crear máscara para neuronas que cumplen el criterio
-neuronas_cumplen = nd_sum_all >= firingMinimo
-neuronas_no_cumplen = nd_sum_all < firingMinimo
+# Create mask for neurons that meet the criterion
+neurons_meet_criterion = nd_sum_all >= firingMinimo
+neurons_do_not_meet_criterion = nd_sum_all < firingMinimo
 
-# Graficar todas las neuronas
-plt.plot(neuron_indices, nd_sum_all, 'o-', color='blue', alpha=0.7, label='Todas las neuronas')
+# Plot all neurons (default blue)
+plt.plot(neuron_indices, nd_sum_all, 'o-', label='All neurons')
 
-# Marcar en rojo las neuronas que no cumplen el criterio
-plt.plot(neuron_indices[neuronas_no_cumplen], nd_sum_all[neuronas_no_cumplen], 'ro', 
-         markersize=8, label=f'Neuronas con < {firingMinimo} spikes')
+# Mark in red the neurons that do not meet the criterion (default red)
+plt.plot(neuron_indices[neurons_do_not_meet_criterion], nd_sum_all[neurons_do_not_meet_criterion], 'o',
+         color='r', markersize=8, label=f'Neurons with < {firingMinimo} spikes')
 
-# Línea horizontal del umbral
-plt.axhline(y=firingMinimo, color='red', linestyle='--', alpha=0.7, 
-           label=f'Umbral mínimo ({firingMinimo} spikes)')
+# Horizontal line for the threshold (default red)
+plt.axhline(y=firingMinimo, color='r', linestyle='--', alpha=0.7,
+            label=f'Minimum threshold ({firingMinimo} spikes)')
 
-plt.xlabel('Índice de Neurona')
-plt.ylabel('Número Total de Spikes')
-plt.title('Firing Rates por Neurona - Criterio de Selección')
+plt.xlabel('Neuron Index')
+plt.ylabel('Total Number of Spikes')
+plt.title('Firing Rates per Neuron - Selection Criteria')
 plt.legend()
 plt.grid(True, alpha=0.3)
 
-# Agregar texto con estadísticas
-total_neuronas = len(nd_sum_all)
-neuronas_eliminadas = np.sum(neuronas_no_cumplen)
-neuronas_mantenidas = total_neuronas - neuronas_eliminadas
+# Add text with statistics
+total_neurons = len(nd_sum_all)
+neurons_removed = np.sum(neurons_do_not_meet_criterion)
+neurons_kept = total_neurons - neurons_removed
 
-plt.text(0.02, 0.98, f'Total neuronas: {total_neuronas-2}\nEliminadas: {neuronas_eliminadas}\nMantenidas: {neuronas_mantenidas}', 
+plt.text(0.02, 0.98, f'Total neurons: {total_neurons-2}\nRemoved: {neurons_removed}\nKept: {neurons_kept}',
          transform=plt.gca().transAxes, verticalalignment='top',
-         bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
+         bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
 
 plt.tight_layout()
+plt.savefig("firing_rates_per_neuron.svg", format="svg")  # Ensure plot is saved before showing/closing
 plt.show()
 
-print(f"Neuronas eliminadas por bajo firing rate (< {firingMinimo} spikes): {neuronas_eliminadas}")
-print(f"Neuronas mantenidas: {neuronas_mantenidas}")
-print(f"Total de neuronas originales: {total_neuronas}")
+print(f"Neurons removed due to low firing rate (< {firingMinimo} spikes): {neurons_removed}")
+print(f"Neurons kept: {neurons_kept}")
+print(f"Total original neurons: {total_neurons}")
+
 
 #%% 
 # AGREGO CLEANING DE NEURONAS CON POCOS SPIKES 
