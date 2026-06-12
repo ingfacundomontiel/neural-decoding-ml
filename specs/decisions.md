@@ -163,7 +163,7 @@ Can be deleted later when truly no longer needed.
 ## D-009 — No `data/processed/` in git, only `data/raw/`
 
 **Date:** 2026-04-17
-**Status:** accepted
+**Status:** superseded by D-013
 
 **Why.** Raw `.mat` files are the canonical ground truth and not huge (few MB each).
 Processed pickles are derivable from raw + code + preprocessing params, so they're
@@ -208,3 +208,46 @@ directory is scaffolded but empty until Phase 4.
 contribute adds a regression test in `external/ibioml/tests/`. Protects the
 thesis results from silent breakage if the library is edited by others, and
 raises the bar for upstream quality.
+
+---
+
+## D-013 — No datasets committed to git (supersedes D-009)
+
+**Date:** 2026-06-12
+**Status:** accepted
+
+**Context.** D-009 originally accepted committing `data/raw/` to git on the
+grounds that the `.mat` files are small. After confirming with the lab
+director that the recordings are unpublished lab data, that choice was
+reconsidered: pushing them to GitHub — even a private repo, let alone the
+public one this repository lives in — copies lab data to third-party
+infrastructure under a personal account. That data is not Facundo's to
+redistribute.
+
+**Decision.** No datasets in git, at any path:
+
+- `*.mat` is in the project `.gitignore`.
+- `data/raw/` and `data/processed/` are documented in their own READMEs but
+  their contents are not tracked.
+- Existing `.mat` blobs were removed from history via `git filter-repo` at
+  the time of this decision.
+- The canonical source of every `.mat` is documented in
+  [`dataset-inventory.md`](dataset-inventory.md) and
+  [`../data/raw/README.md`](../data/raw/README.md). To reproduce the dataset
+  layout on a new machine, copy from the lab paths listed there.
+
+**Alternatives.**
+- **Keep them in git, private repo** — still puts lab data on third-party
+  infrastructure under a personal account. Rejected.
+- **Git LFS** — same data-residency issue plus extra tooling. Rejected for
+  this thesis; could revisit if the lab decides centrally that data lives
+  in LFS under the lab org.
+- **Separate private repo for data** — defers the data-residency question
+  rather than solving it.
+
+**Why.** Lab data should remain on lab-controlled infrastructure until
+publication. The thesis code stays reproducible on any machine via the
+inventory + README + access to the lab source paths.
+
+**Cost.** New machines need an extra step: copy the `.mat` files from the
+lab sources following `data/raw/README.md`. Acceptable.

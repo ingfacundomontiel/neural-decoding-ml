@@ -49,3 +49,7 @@ logs/
 *.pdf
 !docs/**/*.pdf
 .mat
+
+# Datasets — kept locally only (lab data, not ours to redistribute)
+# See specs/decisions.md D-013 and data/raw/README.md for sourcing instructions.
+*.mat

@@ -8,6 +8,49 @@ Files are organized into subdirectories by **recording region**
 (`piriform/`, `ca3/`, `dg/`). The cohort (`expert` / `naive`) is embedded in
 the filename. See [Naming convention](#naming-convention) below.
 
+## Obtaining the files on a new machine
+
+The `.mat` files are **not tracked in git** — see
+[`specs/decisions.md`](../../specs/decisions.md) D-013 for the rationale
+(unpublished lab data, not ours to redistribute through GitHub). To populate
+`data/raw/` on a fresh clone, copy from the lab source paths documented in
+[`specs/dataset-inventory.md`](../../specs/dataset-inventory.md), applying
+the renames below.
+
+Lab source root (on the IBioBA machine):
+```
+/Users/.../marinburginlab-labPrograms/neural-decoding/notebooks/experiments/
+```
+
+The 20-file mapping (canonical lab filename → destination in this repo):
+
+| Lab source filename                       | Destination under `data/raw/` |
+|---|---|
+| `L3_bins100ms_completo.mat`               | `piriform/Pir_L3_expert_bins100ms.mat`        |
+| `L3_bins200ms_completo.mat`               | `piriform/Pir_L3_expert_bins200ms.mat`        |
+| `L5_bins100ms_completo.mat`               | `piriform/Pir_L5_expert_bins100ms.mat`        |
+| `L5_bins200ms_completo.mat`               | `piriform/Pir_L5_expert_bins200ms.mat`        |
+| `N31_bins100ms_completo.mat`              | `piriform/Pir_N31_expert_bins100ms.mat`       |
+| `N31_bins200ms_completo.mat`              | `piriform/Pir_N31_expert_bins200ms.mat`       |
+| `N59_bins100ms_completo.mat`              | `piriform/Pir_N59_expert_bins100ms.mat`       |
+| `N59_bins200ms_completo.mat`              | `piriform/Pir_N59_expert_bins200ms.mat`       |
+| `L7_naive_bins200ms.mat`                  | `piriform/Pir_L7_naive_bins200ms.mat`         |
+| `L7_naive_bins200ms_original.mat`         | `piriform/Pir_L7_naive_bins200ms_original.mat`|
+| `N53_naive_bins200ms.mat`                 | `piriform/Pir_N53_naive_bins200ms.mat`        |
+| `N53_naive_bins200ms_original.mat`        | `piriform/Pir_N53_naive_bins200ms_original.mat`|
+| `CA3_S18_bins200ms_completo.mat`          | `ca3/CA3_S18_expert_bins200ms.mat`            |
+| `CA3_S30_bins200ms_completo.mat`          | `ca3/CA3_S30_naive_bins200ms.mat`             |
+| `CA3_S31_bins200ms_completo.mat`          | `ca3/CA3_S31_naive_bins200ms.mat`             |
+| `DG_S19_bins200ms_completo.mat`           | `dg/DG_S19_expert_bins200ms.mat`              |
+| `DG_S24_bins200ms_completo.mat`           | `dg/DG_S24_naive_bins200ms.mat`               |
+| `DG_S38_bins200ms_completo.mat`           | `dg/DG_S38_naive_bins200ms.mat`               |
+| `DG_S39_bins200ms_completo.mat`           | `dg/DG_S39_naive_bins200ms.mat`               |
+| `DG_S41_bins200ms_completo.mat`           | `dg/DG_S41_naive_bins200ms.mat`               |
+
+The lab sources may live in any of `sfn/datasets/`, `san/datasets/`, or
+`datasets/` under the experiments root — for byte-identical duplicates,
+`sfn/datasets/` is the preferred source (per D-010).
+
 ## What "raw" means here
 
 These files are **not raw recordings**. They have already been processed
