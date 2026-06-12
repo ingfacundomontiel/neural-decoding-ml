@@ -142,7 +142,7 @@ to `_legacy/` untouched.
 ## D-008 — Move legacy contents to `_legacy/` inside the same repo
 
 **Date:** 2026-04-17
-**Status:** accepted
+**Status:** superseded by D-014
 
 **Context.** Old code has reference value (the OOP strategy, bug notes,
 existing trainers) but shouldn't be in the active workspace.
@@ -251,3 +251,39 @@ inventory + README + access to the lab source paths.
 
 **Cost.** New machines need an extra step: copy the `.mat` files from the
 lab sources following `data/raw/README.md`. Acceptable.
+
+---
+
+## D-014 — `_legacy/` directory kept locally, not committed (supersedes D-008)
+
+**Date:** 2026-06-12
+**Status:** accepted
+
+**Context.** D-008 accepted moving the previous workspace contents into
+`_legacy/` and tracking that directory in git. After the discovery (during
+the same push that produced D-013) that `_legacy/processed-datasets/`
+contained derivative data from lab recordings — preprocessed pickles,
+trained model weights, and experiment outputs — the same data-residency
+reasoning that drove D-013 applies here. Pushing those artifacts to a
+public GitHub repo under a personal account is not appropriate.
+
+**Decision.** The `_legacy/` directory stays on disk for local reference
+(the original D-008 motivation — "zero-friction retrieval when writing
+the thesis retrospective"), but its contents are not tracked:
+
+- `.gitignore` excludes `_legacy/` entirely.
+- Data extensions are also gitignored globally as defence-in-depth:
+  `*.pickle`, `*.pkl`, `*.pth`, `*.npy`, `*.npz`, `*.h5`, `*.hdf5`.
+- The previously tracked `_legacy/*` blobs were removed from git history
+  via `git filter-repo` at the time of this decision.
+- The original lab sources of any derivable artifact remain accessible
+  at `marinburginlab-labPrograms/.../experiments/`, as already noted by
+  D-013.
+
+**Why.** Same rationale as D-013: unpublished lab data — *including
+artifacts derived from it* (pickles, weights, results JSONs) — should
+not be redistributed via GitHub. The local copy still serves the
+original D-008 purpose.
+
+**Cost.** A new clone won't have `_legacy/`. To rebuild it, the developer
+needs access to the original workspace or the lab paths. Acceptable.

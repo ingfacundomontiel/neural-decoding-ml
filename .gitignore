@@ -53,3 +53,17 @@ logs/
 # Datasets — kept locally only (lab data, not ours to redistribute)
 # See specs/decisions.md D-013 and data/raw/README.md for sourcing instructions.
 *.mat
+
+# Legacy workspace — kept locally for context, but never committed.
+# Contains old code AND data-derived artifacts (processed pickles, model weights,
+# experiment outputs) from lab recordings. See specs/decisions.md D-014.
+_legacy/
+
+# Data-derived artifacts at any path (extra defence beyond *.mat and _legacy/)
+*.pickle
+*.pkl
+*.pth
+*.npy
+*.npz
+*.h5
+*.hdf5
