@@ -5,6 +5,12 @@ with deduplication decisions for migration to `data/raw/`.
 
 Generated: 2026-04-17. Based on byte-identical comparison via file size + mtime.
 
+> **Note (post-restructure).** Filenames in this document refer to the
+> **pre-restructure state**. The catalog of canonical paths and filenames
+> after the per-region subdirectory reorganization lives in
+> [`data/raw/README.md`](../data/raw/README.md). This file is kept as the
+> historical record of the deduplication decisions made at migration time.
+
 ## Legend
 
 - `sfn` = `marinburginlab-labPrograms/neural-decoding/notebooks/experiments/sfn/datasets/`

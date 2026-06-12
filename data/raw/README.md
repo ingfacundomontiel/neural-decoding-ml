@@ -1,13 +1,55 @@
 # `data/raw/` — Dataset Catalog
 
-All 20 raw `.mat` files used across the project. One canonical copy per dataset,
-deduplicated from the three source directories per
+All `.mat` files used as input to the project's preprocessing pipeline. One
+canonical copy per dataset, deduplicated from the three source directories per
 [`specs/dataset-inventory.md`](../../specs/dataset-inventory.md).
+
+Files are organized into subdirectories by **recording region**
+(`piriform/`, `ca3/`, `dg/`). The cohort (`expert` / `naive`) is embedded in
+the filename. See [Naming convention](#naming-convention) below.
+
+## What "raw" means here
+
+These files are **not raw recordings**. They have already been processed
+upstream (before they reached this repo):
+
+- **Binning is done.** `neuronActivity` is `(T_bins, N_neurons)` with spike
+  counts already aggregated in 100 ms or 200 ms bins.
+- **Spike sorting is done.** The `N_neurons` axis represents sorted units.
+- **Trials are structured.** `trialFinalBin`, `trialDurationInBins`,
+  `dPrime`, `criterion` are precomputed.
+- **Behavior is aligned to bins.** `position` and `velocity`/`speed` are
+  resampled to the same temporal grid as the neural activity.
+
+What **this project** still does on top of these files lives in
+`ibioml.preprocess_data` (history windows, trial filtering by dPrime, dropping
+low-firing neurons, etc.) and produces the artifacts under `data/processed/`.
+
+When you write the Methods section of the thesis, distinguish:
+1. What was done upstream (before `.mat`) — described above.
+2. What `ibioml.preprocess_data` does (documented in
+   [`docs/ibioml-audit.md`](../../docs/ibioml-audit.md) §1).
+3. What experiment-specific code adds on top of (2).
+
+## Naming convention
+
+```
+<region>_<animal_id>_<cohort>_bins<size>[_suffix].mat
+```
+
+- **`<region>`** — `Pir`, `CA3`, or `DG`. Redundant with the parent directory
+  but kept in the filename so individual files remain self-describing if they
+  get moved or copied out of context.
+- **`<animal_id>`** — e.g. `L3`, `L5`, `N31`, `N53`, `L7`, `S18`, `S19`, …
+- **`<cohort>`** — `expert` or `naive` (learning stage).
+- **`bins<size>`** — `bins100ms` or `bins200ms` (temporal bin width).
+- **`[_suffix]`** — optional, e.g. `_original` for the naive piriform pre-/post-
+  processing pair (see Open questions).
 
 ## File format
 
-Every `.mat` exposes the same MATLAB variables (semantics documented in
-`specs/research.md § Common data model`):
+Every `.mat` exposes the same MATLAB variables (semantics in
+[`specs/research.md`](../../specs/research.md) § Common data model):
 
 | Variable | Shape | Meaning |
 |---|---|---|
@@ -24,71 +66,86 @@ Every `.mat` exposes the same MATLAB variables (semantics documented in
 
 ## Catalog
 
-### Hippocampus — 200 ms bins (8 datasets)
+### Piriform cortex — `piriform/` (12 files, 6 animals)
 
-| Filename | Size (bytes) | Region | Animal | Session | Notes |
+| Filename | Animal | Cohort | Bin | In SFN | Notes |
 |---|---|---|---|---|---|
-| `CA3_S18_bins200ms_completo.mat` | 151,334 | CA3 | — | S18 | |
-| `CA3_S30_bins200ms_completo.mat` | 74,065 | CA3 | — | S30 | new in SFN batch |
-| `CA3_S31_bins200ms_completo.mat` | 500,432 | CA3 | — | S31 | new in SFN batch |
-| `DG_S19_bins200ms_completo.mat` | 129,192 | DG | — | S19 | |
-| `DG_S24_bins200ms_completo.mat` | 719,632 | DG | — | S24 | new in SFN batch |
-| `DG_S38_bins200ms_completo.mat` | 1,510,720 | DG | — | S38 | largest file |
-| `DG_S39_bins200ms_completo.mat` | 529,248 | DG | — | S39 | new in SFN batch |
-| `DG_S41_bins200ms_completo.mat` | 483,880 | DG | — | S41 | new in SFN batch |
+| `Pir_L3_expert_bins100ms.mat`        | L3  | expert | 100 ms | ✓ | |
+| `Pir_L3_expert_bins200ms.mat`        | L3  | expert | 200 ms | ✓ | |
+| `Pir_L5_expert_bins100ms.mat`        | L5  | expert | 100 ms | ✓ | |
+| `Pir_L5_expert_bins200ms.mat`        | L5  | expert | 200 ms | ✓ | |
+| `Pir_N31_expert_bins100ms.mat`       | N31 | expert | 100 ms | ✓ | |
+| `Pir_N31_expert_bins200ms.mat`       | N31 | expert | 200 ms | ✓ | |
+| `Pir_N59_expert_bins100ms.mat`       | N59 | expert | 100 ms | ✗ | **not in SFN poster** — confirm inclusion with director |
+| `Pir_N59_expert_bins200ms.mat`       | N59 | expert | 200 ms | ✗ | **not in SFN poster** — confirm inclusion with director |
+| `Pir_L7_naive_bins200ms.mat`             | L7  | naive  | 200 ms | ✓ | processed version (see Open questions) |
+| `Pir_L7_naive_bins200ms_original.mat`    | L7  | naive  | 200 ms | ✓ | `_original` snapshot (smaller; see Open questions) |
+| `Pir_N53_naive_bins200ms.mat`            | N53 | naive  | 200 ms | ✓ | processed version (see Open questions) |
+| `Pir_N53_naive_bins200ms_original.mat`   | N53 | naive  | 200 ms | ✓ | `_original` snapshot (smaller; see Open questions) |
 
-### Expert piriform cortex — 200 ms bins (4 datasets)
+### CA3 — `ca3/` (3 files, 3 sessions)
 
-| Filename | Size (bytes) | Region | Animal | Cohort |
-|---|---|---|---|---|
-| `L3_bins200ms_completo.mat` | 146,583 | piriform | L3 | expert |
-| `L5_bins200ms_completo.mat` | 302,264 | piriform | L5 | expert |
-| `N31_bins200ms_completo.mat` | 198,330 | piriform | N31 | expert |
-| `N59_bins200ms_completo.mat` | 122,371 | piriform | N59 | expert |
-
-### Expert piriform cortex — 100 ms bins (4 datasets)
-
-| Filename | Size (bytes) | Region | Animal | Cohort | Notes |
+| Filename | Animal/Session | Cohort | Bin | In SFN | Notes |
 |---|---|---|---|---|---|
-| `L3_bins100ms_completo.mat` | 239,379 | piriform | L3 | expert | only in legacy dirs |
-| `L5_bins100ms_completo.mat` | 449,705 | piriform | L5 | expert | |
-| `N31_bins100ms_completo.mat` | 302,545 | piriform | N31 | expert | only in legacy dirs |
-| `N59_bins100ms_completo.mat` | 195,212 | piriform | N59 | expert | only in legacy dirs |
+| `CA3_S18_expert_bins200ms.mat` | S18 | expert | 200 ms | ✓ | same animal as `DG_S18` (different recording session) |
+| `CA3_S30_naive_bins200ms.mat`  | S30 | naive  | 200 ms | ✓ | |
+| `CA3_S31_naive_bins200ms.mat`  | S31 | naive  | 200 ms | ✓ | |
 
-### Naive piriform cortex — 200 ms bins (4 files, 2 animals)
+### Dentate gyrus — `dg/` (5 files, 5 sessions)
 
-| Filename | Size (bytes) | Region | Animal | Cohort | Notes |
+| Filename | Animal/Session | Cohort | Bin | In SFN | Notes |
 |---|---|---|---|---|---|
-| `L7_naive_bins200ms.mat` | 1,333,264 | piriform | L7 | naive | processed version |
-| `L7_naive_bins200ms_original.mat` | 390,746 | piriform | L7 | naive | pre-processing snapshot |
-| `N53_naive_bins200ms.mat` | 1,471,696 | piriform | N53 | naive | processed version |
-| `N53_naive_bins200ms_original.mat` | 256,986 | piriform | N53 | naive | pre-processing snapshot |
+| `DG_S19_expert_bins200ms.mat` | S19 | expert | 200 ms | ✓ | |
+| `DG_S24_naive_bins200ms.mat`  | S24 | naive  | 200 ms | ✗ | **not in SFN poster** — confirm inclusion with director |
+| `DG_S38_naive_bins200ms.mat`  | S38 | naive  | 200 ms | ✓ | |
+| `DG_S39_naive_bins200ms.mat`  | S39 | naive  | 200 ms | ✓ | |
+| `DG_S41_naive_bins200ms.mat`  | S41 | naive  | 200 ms | ✗ | **not in SFN poster** — confirm inclusion with director |
 
-## Cohort groupings (summary)
+## Cross-reference with the SFN poster
 
-- **Expert piriform:** L3, L5, N31, N59 (4 animals; both 100 ms and 200 ms bins available)
-- **Naive piriform:** L7, N53 (2 animals; 200 ms bins, `_original` and processed versions)
-- **Hippocampus:** CA3_S18, CA3_S30, CA3_S31, DG_S19, DG_S24, DG_S38, DG_S39, DG_S41
-  (8 sessions; 200 ms bins only)
+The SFN poster groups datasets as six cohorts (region × learning stage):
 
-## Notes and open questions
+| Poster group | Expected in poster | Present in `data/raw/` | Missing |
+|---|---|---|---|
+| Pir-Naive   | N53, L7         | N53, L7                       | — |
+| Pir-Expert  | N31, L3, L5     | N31, L3, L5 (+ N59 extra)     | — |
+| CA3-Naive   | S30, S31        | S30, S31                      | — |
+| CA3-Expert  | S17, S18        | S18                           | **S17** |
+| DG-Naive    | S38, S39        | S38, S39 (+ S24, S41 extras)  | — |
+| DG-Expert   | S17, S18, S19   | S19                           | **S17, S18** |
 
-1. **`_original` naive files.** For L7 and N53 there are both `_original` and
-   non-`_original` versions with substantially different sizes. Need to confirm
-   with Facundo what the processing step was between them. One hypothesis: the
-   non-`_original` files have had trials pre-cleaned.
-2. **`velocity` vs `speed`.** Variable naming is inconsistent across datasets.
-   First-pass exploration should confirm which datasets use which name.
-3. **Animal vs session metadata.** The filename embeds animal (L3, L5, ...) or
-   session (S18, S19, ...) but not both. The lab's master record likely clarifies;
-   ask Facundo to fill in the "Animal" column for hippocampus entries and the
-   "Session" column for piriform entries if relevant.
-4. **Sizes are not strictly proportional to neuron/trial counts.** A reliable
-   count requires loading each file (done in `exploration/01-dataset-overview.py`).
+Animals S17 and S18 contributed **two separate recording sessions each** —
+one in CA3 and one in DG (not simultaneous). The recurring labels in the
+poster reflect the same animal, not duplicate files.
+
+**Missing from disk** (in poster, not yet in `data/raw/`):
+`CA3_S17`, `DG_S17`, `DG_S18`. To be obtained from the director.
+
+**Extras on disk** (in `data/raw/`, not shown in poster): `Pir_N59`
+(100 ms + 200 ms), `DG_S24`, `DG_S41`. Likely datasets the director chose
+not to include in the SFN visualization but that may still be valid for the
+thesis — confirm whether to keep, exclude, or treat separately.
+
+## Open questions
+
+1. **`_original` vs non-`_original` naive piriform files.** L7 and N53 each
+   have two versions, with the non-`_original` ones being substantially
+   larger (~3–6× by bytes). It is not yet established what processing step
+   produced each variant. To be resolved by a comparison in
+   `exploration/`, not by file inspection alone.
+2. **What `_completo` meant in the original filenames.** Removed during the
+   rename, but the original convention may carry information worth surfacing
+   in the manifest (e.g. "all trials, no filtering" vs a curated subset).
+3. **`velocity` vs `speed`.** Variable naming is inconsistent across datasets.
+   The first overview notebook should produce a column listing which
+   datasets use which name.
+4. **Animal vs session ID.** Hippocampus datasets are labeled by session
+   (`S17`, `S19`, …); piriform datasets by animal (`L3`, `N31`, …). The
+   lab's master record likely clarifies how to relate the two.
 
 ## Do not modify
 
-These are the canonical source-of-truth files for every derived artifact in the
-project. If one needs updating (new recording session, corrected data), replace
-the whole file, bump a version note in the relevant row above, and rerun every
-dependent preprocessing step.
+These are the canonical source-of-truth files for every derived artifact in
+the project. If one needs updating (new recording session, corrected data),
+replace the whole file, bump a version note in the relevant row above, and
+rerun every dependent preprocessing step.

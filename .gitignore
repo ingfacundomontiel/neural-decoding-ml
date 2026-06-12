@@ -48,3 +48,4 @@ logs/
 # Thesis drafts / large artifacts
 *.pdf
 !docs/**/*.pdf
+.mat
