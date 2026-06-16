@@ -8,6 +8,10 @@ Files are organized into subdirectories by **recording region**
 (`piriform/`, `ca3/`, `dg/`). The cohort (`expert` / `naive`) is embedded in
 the filename. See [Naming convention](#naming-convention) below.
 
+> **For the experimental setup and trial structure** (corridor geometry,
+> reward zone, position units, known drift), see
+> [`docs/trial-structure.md`](../../docs/trial-structure.md).
+
 ## Obtaining the files on a new machine
 
 The `.mat` files are **not tracked in git** — see
