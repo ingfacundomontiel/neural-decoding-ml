@@ -26,7 +26,7 @@ Lab source root (on the IBioBA machine):
 /Users/.../marinburginlab-labPrograms/neural-decoding/notebooks/experiments/
 ```
 
-The 20-file mapping (canonical lab filename → destination in this repo):
+The 21-file mapping (canonical lab filename → destination in this repo):
 
 | Lab source filename                       | Destination under `data/raw/` |
 |---|---|
@@ -38,13 +38,14 @@ The 20-file mapping (canonical lab filename → destination in this repo):
 | `N31_bins200ms_completo.mat`              | `piriform/Pir_N31_expert_bins200ms.mat`       |
 | `N59_bins100ms_completo.mat`              | `piriform/Pir_N59_expert_bins100ms.mat`       |
 | `N59_bins200ms_completo.mat`              | `piriform/Pir_N59_expert_bins200ms.mat`       |
-| `L7_naive_bins200ms.mat`                  | `piriform/Pir_L7_naive_bins200ms.mat`         |
-| `L7_naive_bins200ms_original.mat`         | `piriform/Pir_L7_naive_bins200ms_original.mat`|
-| `N53_naive_bins200ms.mat`                 | `piriform/Pir_N53_naive_bins200ms.mat`        |
-| `N53_naive_bins200ms_original.mat`        | `piriform/Pir_N53_naive_bins200ms_original.mat`|
+| `L7_naive_bins200ms_completo.mat`         | `piriform/Pir_L7_naive_bins200ms.mat`         |
+| `N53_naive_bins200ms_completo.mat`        | `piriform/Pir_N53_naive_bins200ms.mat`        |
+| `CA3_S17_bins200ms_completo.mat`          | `ca3/CA3_S17_expert_bins200ms.mat`            |
 | `CA3_S18_bins200ms_completo.mat`          | `ca3/CA3_S18_expert_bins200ms.mat`            |
 | `CA3_S30_bins200ms_completo.mat`          | `ca3/CA3_S30_naive_bins200ms.mat`             |
 | `CA3_S31_bins200ms_completo.mat`          | `ca3/CA3_S31_naive_bins200ms.mat`             |
+| `DG_S17_bins200ms_completo.mat`           | `dg/DG_S17_expert_bins200ms.mat`              |
+| `DG_S18_bins200ms_completo.mat`           | `dg/DG_S18_expert_bins200ms.mat`              |
 | `DG_S19_bins200ms_completo.mat`           | `dg/DG_S19_expert_bins200ms.mat`              |
 | `DG_S24_bins200ms_completo.mat`           | `dg/DG_S24_naive_bins200ms.mat`               |
 | `DG_S38_bins200ms_completo.mat`           | `dg/DG_S38_naive_bins200ms.mat`               |
@@ -53,7 +54,9 @@ The 20-file mapping (canonical lab filename → destination in this repo):
 
 The lab sources may live in any of `sfn/datasets/`, `san/datasets/`, or
 `datasets/` under the experiments root — for byte-identical duplicates,
-`sfn/datasets/` is the preferred source (per D-010).
+`sfn/datasets/` is the preferred source (per D-010). The complete bundle
+that Sebas distributes (`scriptspipeline/datasets.zip`) contains exactly
+the 21 files listed above with the `_completo` suffix.
 
 ## What "raw" means here
 
@@ -69,8 +72,9 @@ upstream (before they reached this repo):
   resampled to the same temporal grid as the neural activity.
 
 What **this project** still does on top of these files lives in
-`ibioml.preprocess_data` (history windows, trial filtering by dPrime, dropping
-low-firing neurons, etc.) and produces the artifacts under `data/processed/`.
+`ibioml.preprocess_data` (history windows, trial filtering by dPrime,
+immobility filtering, dropping low-firing neurons, etc.) and produces the
+artifacts under `data/processed/`.
 
 When you write the Methods section of the thesis, distinguish:
 1. What was done upstream (before `.mat`) — described above.
@@ -81,17 +85,19 @@ When you write the Methods section of the thesis, distinguish:
 ## Naming convention
 
 ```
-<region>_<animal_id>_<cohort>_bins<size>[_suffix].mat
+<region>_<animal_id>_<cohort>_bins<size>.mat
 ```
 
 - **`<region>`** — `Pir`, `CA3`, or `DG`. Redundant with the parent directory
   but kept in the filename so individual files remain self-describing if they
   get moved or copied out of context.
-- **`<animal_id>`** — e.g. `L3`, `L5`, `N31`, `N53`, `L7`, `S18`, `S19`, …
+- **`<animal_id>`** — e.g. `L3`, `L5`, `N31`, `N53`, `L7`, `S17`, `S18`, …
 - **`<cohort>`** — `expert` or `naive` (learning stage).
 - **`bins<size>`** — `bins100ms` or `bins200ms` (temporal bin width).
-- **`[_suffix]`** — optional, e.g. `_original` for the naive piriform pre-/post-
-  processing pair (see Open questions).
+
+The `_completo` suffix of the lab's filenames is dropped during the rename
+(it conveyed no useful information not already in the path or the cohort
+field).
 
 ## File format
 
@@ -101,47 +107,53 @@ Every `.mat` exposes the same MATLAB variables (semantics in
 | Variable | Shape | Meaning |
 |---|---|---|
 | `neuronActivity` | `(T_bins, N_neurons)` | spike counts per bin per neuron |
-| `position` | `(T_bins, 1)` | animal's VR-corridor position |
-| `velocity` or `speed` | `(T_bins, 1)` | velocity (name inconsistent across datasets) |
-| `rewCtxt` | `(E_trials,)` | 1 if trial's context is rewarded |
-| `rewOdor` | `(E_trials,)` | 1 if trial's odor is rewarded |
-| `goResponse` | `(E_trials,)` | 1 if mouse licked |
+| `position` | `(T_bins, 1)` | animal's VR-corridor position (wheel-encoder degrees; see [`docs/trial-structure.md`](../../docs/trial-structure.md)) |
+| `velocity` or `speed` | `(T_bins, 1)` | velocity in cm/s (name inconsistent across datasets) |
+| `rewCtxt` | `(T_bins,)` | per-bin flag: 1 while the rewarded context is being presented |
+| `rewOdor` | `(T_bins,)` | per-bin flag: 1 while the rewarded odor is being presented |
+| `goResponse` | `(T_bins,)` | per-bin flag: 1 when the animal is licking |
 | `dPrime` | `(E_trials,)` | cumulative discriminability at that trial |
 | `criterion` | `(E_trials,)` | cumulative licking bias |
 | `trialDurationInBins` | `(E_trials,)` | length of each trial |
-| `trialFinalBin` | `(E_trials,)` | last temporal bin of each trial |
+| `trialFinalBin` | `(E_trials,)` | last temporal bin of each trial (1-indexed in MATLAB; load with `-1`) |
+
+> Note: `rewCtxt`, `rewOdor`, `goResponse` are **per-bin**, not per-trial.
+> They fire only while the corresponding event is active during a trial.
+> To get a per-trial label from these (e.g. "did this trial have a rewarded
+> context"), aggregate with `np.any(...)` over the trial's bin range.
 
 ## Catalog
 
-### Piriform cortex — `piriform/` (12 files, 6 animals)
+### Piriform cortex — `piriform/` (10 files, 6 animals)
 
 | Filename | Animal | Cohort | Bin | In SFN | Notes |
 |---|---|---|---|---|---|
-| `Pir_L3_expert_bins100ms.mat`        | L3  | expert | 100 ms | ✓ | |
-| `Pir_L3_expert_bins200ms.mat`        | L3  | expert | 200 ms | ✓ | |
-| `Pir_L5_expert_bins100ms.mat`        | L5  | expert | 100 ms | ✓ | |
-| `Pir_L5_expert_bins200ms.mat`        | L5  | expert | 200 ms | ✓ | |
-| `Pir_N31_expert_bins100ms.mat`       | N31 | expert | 100 ms | ✓ | |
-| `Pir_N31_expert_bins200ms.mat`       | N31 | expert | 200 ms | ✓ | |
-| `Pir_N59_expert_bins100ms.mat`       | N59 | expert | 100 ms | ✗ | **not in SFN poster** — confirm inclusion with director |
-| `Pir_N59_expert_bins200ms.mat`       | N59 | expert | 200 ms | ✗ | **not in SFN poster** — confirm inclusion with director |
-| `Pir_L7_naive_bins200ms.mat`             | L7  | naive  | 200 ms | ✓ | processed version (see Open questions) |
-| `Pir_L7_naive_bins200ms_original.mat`    | L7  | naive  | 200 ms | ✓ | `_original` snapshot (smaller; see Open questions) |
-| `Pir_N53_naive_bins200ms.mat`            | N53 | naive  | 200 ms | ✓ | processed version (see Open questions) |
-| `Pir_N53_naive_bins200ms_original.mat`   | N53 | naive  | 200 ms | ✓ | `_original` snapshot (smaller; see Open questions) |
+| `Pir_L3_expert_bins100ms.mat`   | L3  | expert | 100 ms | ✓ | |
+| `Pir_L3_expert_bins200ms.mat`   | L3  | expert | 200 ms | ✓ | |
+| `Pir_L5_expert_bins100ms.mat`   | L5  | expert | 100 ms | ✓ | |
+| `Pir_L5_expert_bins200ms.mat`   | L5  | expert | 200 ms | ✓ | |
+| `Pir_N31_expert_bins100ms.mat`  | N31 | expert | 100 ms | ✓ | |
+| `Pir_N31_expert_bins200ms.mat`  | N31 | expert | 200 ms | ✓ | |
+| `Pir_N59_expert_bins100ms.mat`  | N59 | expert | 100 ms | ✗ | **not in SFN poster** — confirm inclusion with director |
+| `Pir_N59_expert_bins200ms.mat`  | N59 | expert | 200 ms | ✗ | **not in SFN poster** — confirm inclusion with director |
+| `Pir_L7_naive_bins200ms.mat`    | L7  | naive  | 200 ms | ✓ | byte-identical to lab's `L7_naive_bins200ms_completo.mat` |
+| `Pir_N53_naive_bins200ms.mat`   | N53 | naive  | 200 ms | ✓ | byte-identical to lab's `N53_naive_bins200ms_completo.mat` |
 
-### CA3 — `ca3/` (3 files, 3 sessions)
+### CA3 — `ca3/` (4 files, 4 animals)
 
-| Filename | Animal/Session | Cohort | Bin | In SFN | Notes |
+| Filename | Animal | Cohort | Bin | In SFN | Notes |
 |---|---|---|---|---|---|
-| `CA3_S18_expert_bins200ms.mat` | S18 | expert | 200 ms | ✓ | same animal as `DG_S18` (different recording session) |
+| `CA3_S17_expert_bins200ms.mat` | S17 | expert | 200 ms | ✓ | animal also recorded in DG (`DG_S17`, separate recording) |
+| `CA3_S18_expert_bins200ms.mat` | S18 | expert | 200 ms | ✓ | animal also recorded in DG (`DG_S18`, separate recording) |
 | `CA3_S30_naive_bins200ms.mat`  | S30 | naive  | 200 ms | ✓ | |
 | `CA3_S31_naive_bins200ms.mat`  | S31 | naive  | 200 ms | ✓ | |
 
-### Dentate gyrus — `dg/` (5 files, 5 sessions)
+### Dentate gyrus — `dg/` (7 files, 7 animals)
 
-| Filename | Animal/Session | Cohort | Bin | In SFN | Notes |
+| Filename | Animal | Cohort | Bin | In SFN | Notes |
 |---|---|---|---|---|---|
+| `DG_S17_expert_bins200ms.mat` | S17 | expert | 200 ms | ✓ | animal also recorded in CA3 (`CA3_S17`, separate recording) |
+| `DG_S18_expert_bins200ms.mat` | S18 | expert | 200 ms | ✓ | animal also recorded in CA3 (`CA3_S18`, separate recording) |
 | `DG_S19_expert_bins200ms.mat` | S19 | expert | 200 ms | ✓ | |
 | `DG_S24_naive_bins200ms.mat`  | S24 | naive  | 200 ms | ✗ | **not in SFN poster** — confirm inclusion with director |
 | `DG_S38_naive_bins200ms.mat`  | S38 | naive  | 200 ms | ✓ | |
@@ -152,43 +164,46 @@ Every `.mat` exposes the same MATLAB variables (semantics in
 
 The SFN poster groups datasets as six cohorts (region × learning stage):
 
-| Poster group | Expected in poster | Present in `data/raw/` | Missing |
+| Poster group | Expected | Present in `data/raw/` | Status |
 |---|---|---|---|
-| Pir-Naive   | N53, L7         | N53, L7                       | — |
-| Pir-Expert  | N31, L3, L5     | N31, L3, L5 (+ N59 extra)     | — |
-| CA3-Naive   | S30, S31        | S30, S31                      | — |
-| CA3-Expert  | S17, S18        | S18                           | **S17** |
-| DG-Naive    | S38, S39        | S38, S39 (+ S24, S41 extras)  | — |
-| DG-Expert   | S17, S18, S19   | S19                           | **S17, S18** |
+| Pir-Naive   | N53, L7         | N53, L7                       | complete |
+| Pir-Expert  | N31, L3, L5     | N31, L3, L5 (+ N59 extra)     | complete + 1 extra |
+| CA3-Naive   | S30, S31        | S30, S31                      | complete |
+| CA3-Expert  | S17, S18        | S17, S18                      | complete |
+| DG-Naive    | S38, S39        | S38, S39 (+ S24, S41 extras)  | complete + 2 extras |
+| DG-Expert   | S17, S18, S19   | S17, S18, S19                 | complete |
 
-Animals S17 and S18 contributed **two separate recording sessions each** —
-one in CA3 and one in DG (not simultaneous). The recurring labels in the
-poster reflect the same animal, not duplicate files.
-
-**Missing from disk** (in poster, not yet in `data/raw/`):
-`CA3_S17`, `DG_S17`, `DG_S18`. To be obtained from the director.
+Animals S17 and S18 were each **recorded twice — once in CA3 and once in
+DG, not simultaneously**. The recurring labels in the poster reflect the
+same animal recorded in different regions, not duplicate files. The
+identifier (`S17`, `L5`, `N53`, etc.) refers to the animal across all its
+recordings, regardless of region or learning stage.
 
 **Extras on disk** (in `data/raw/`, not shown in poster): `Pir_N59`
 (100 ms + 200 ms), `DG_S24`, `DG_S41`. Likely datasets the director chose
 not to include in the SFN visualization but that may still be valid for the
-thesis — confirm whether to keep, exclude, or treat separately.
+thesis — confirm with director whether to keep, exclude, or treat
+separately.
+
+## Archived `_original` snapshots
+
+The lab's `L7` and `N53` files used to ship in two flavours: a `_completo`
+version and an `_original` snapshot, with substantially different sizes.
+An MD5 check (2026-06-19) confirmed that **the `_completo` version is the
+one we have here** as `Pir_L7_naive_bins200ms.mat` / `Pir_N53_naive_bins200ms.mat`
+(byte-identical to Sebas's bundle).
+
+The `_original` files are an older pre-processing snapshot that the lab no
+longer ships in its production pipeline. They are kept on the developer
+machine only, under `_legacy/datasets/originals/`, gitignored — useful as
+a reference if a comparison vs the production version is ever needed, but
+not part of the canonical catalog.
 
 ## Open questions
 
-1. **`_original` vs non-`_original` naive piriform files.** L7 and N53 each
-   have two versions, with the non-`_original` ones being substantially
-   larger (~3–6× by bytes). It is not yet established what processing step
-   produced each variant. To be resolved by a comparison in
-   `exploration/`, not by file inspection alone.
-2. **What `_completo` meant in the original filenames.** Removed during the
-   rename, but the original convention may carry information worth surfacing
-   in the manifest (e.g. "all trials, no filtering" vs a curated subset).
-3. **`velocity` vs `speed`.** Variable naming is inconsistent across datasets.
-   The first overview notebook should produce a column listing which
-   datasets use which name.
-4. **Animal vs session ID.** Hippocampus datasets are labeled by session
-   (`S17`, `S19`, …); piriform datasets by animal (`L3`, `N31`, …). The
-   lab's master record likely clarifies how to relate the two.
+1. **`velocity` vs `speed`.** Variable naming is inconsistent across
+   datasets. The first overview notebook should produce a column listing
+   which datasets use which name.
 
 ## Do not modify
 
