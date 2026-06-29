@@ -58,6 +58,9 @@ logs/
 # Contains old code AND data-derived artifacts (processed pickles, model weights,
 # experiment outputs) from lab recordings. See specs/decisions.md D-014.
 _legacy/
+/external/scriptspipeline
+docs/dudas.md
+docs/pre-procesamiento.md
 
 # Data-derived artifacts at any path (extra defence beyond *.mat and _legacy/)
 *.pickle

@@ -109,18 +109,26 @@ Every `.mat` exposes the same MATLAB variables (semantics in
 | `neuronActivity` | `(T_bins, N_neurons)` | spike counts per bin per neuron |
 | `position` | `(T_bins, 1)` | animal's VR-corridor position (wheel-encoder degrees; see [`docs/trial-structure.md`](../../docs/trial-structure.md)) |
 | `velocity` or `speed` | `(T_bins, 1)` | velocity in cm/s (name inconsistent across datasets) |
-| `rewCtxt` | `(T_bins,)` | per-bin flag: 1 while the rewarded context is being presented |
-| `rewOdor` | `(T_bins,)` | per-bin flag: 1 while the rewarded odor is being presented |
-| `goResponse` | `(T_bins,)` | per-bin flag: 1 when the animal is licking |
+| `rewCtxt` | `(T_bins,)` | per-trial label, encoded per-bin (constant within trial): 1 if the trial's context is the rewarded one |
+| `rewOdor` | `(T_bins,)` | per-trial label, encoded per-bin (constant within trial): 1 if the trial's odor is the rewarded one |
+| `goResponse` | `(T_bins,)` | per-trial label, encoded per-bin (constant within trial): 1 if the animal licked at any point during the trial |
 | `dPrime` | `(E_trials,)` | cumulative discriminability at that trial |
 | `criterion` | `(E_trials,)` | cumulative licking bias |
 | `trialDurationInBins` | `(E_trials,)` | length of each trial |
 | `trialFinalBin` | `(E_trials,)` | last temporal bin of each trial (1-indexed in MATLAB; load with `-1`) |
 
-> Note: `rewCtxt`, `rewOdor`, `goResponse` are **per-bin**, not per-trial.
-> They fire only while the corresponding event is active during a trial.
-> To get a per-trial label from these (e.g. "did this trial have a rewarded
-> context"), aggregate with `np.any(...)` over the trial's bin range.
+> Important: `rewCtxt`, `rewOdor`, and `goResponse` are stored as
+> per-bin arrays but are **per-trial labels** — their value is constant
+> within each trial. Verified empirically across 4 datasets (886 trials,
+> zero exceptions). You cannot use them to locate *when* within a trial
+> the animal licked, the odor was presented, or the context became
+> rewarded; only *which* trials had those properties.
+>
+> To extract a clean per-trial array, sample at any bin inside the
+> trial (e.g. `value[trialFinalBin]`). To detect the *moment* of
+> licking within a trial — for instance to filter the bins where the
+> animal is licking the reward — use `velocity` instead (it drops to
+> ~0 cm/s during licking).
 
 ## Catalog
 
