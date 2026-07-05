@@ -11,12 +11,18 @@ authors = [
 dependencies = [
     # Core library — audited/extended fork of ibioml, local editable install
     "ibioml[optuna]",
-    # Pin torch to last Intel-macOS compatible release (2.2.x); PyTorch dropped
-    # x86_64 macOS wheels in 2.3+. Remove/raise when we move to Apple Silicon.
-    "torch>=2.0,<2.3",
-    # torch 2.2 is compiled against NumPy 1.x; NumPy 2.x triggers runtime warnings
-    # and potential crashes. Pin can lift once torch is upgraded.
-    "numpy<2",
+    # torch is split by platform:
+    # - Intel macOS: pin to 2.2.x (last release with x86_64 macOS wheels;
+    #   dropped in 2.3+). Remove when we move to Apple Silicon.
+    # - Linux GPU hosts: 2.6+ ships kernels for Blackwell (sm_120, RTX 50xx);
+    #   2.2 only covers up to Hopper (sm_90).
+    "torch>=2.2,<2.3 ; sys_platform == 'darwin'",
+    "torch>=2.6 ; sys_platform == 'linux'",
+    # numpy pairs with the torch version:
+    # - torch 2.2 was compiled against numpy 1.x — numpy 2.x can crash.
+    # - torch 2.6+ works natively with numpy 2.x.
+    "numpy<2 ; sys_platform == 'darwin'",
+    "numpy ; sys_platform == 'linux'",
     # Notebook tooling (Jupytext-paired .py + .ipynb workflow)
     "jupyterlab>=4.0",
     "jupytext>=1.16",
