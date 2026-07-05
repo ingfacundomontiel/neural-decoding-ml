@@ -5,7 +5,7 @@ the raw `.mat` recordings before they feed the decoder. It is the analogue
 of the "experiment-specific preprocessing" layer noted in
 [`data/raw/README.md`](../data/raw/README.md): what *this project* adds on
 top of the rig software's upstream processing, mirroring the pipeline that
-Sebas runs in his own scripts.
+the lab maintainer runs in the reference scripts.
 
 Related documents:
 
@@ -77,7 +77,7 @@ they are part of natural running behaviour. Only sustained immobility
 is removed.
 
 **Implementation**: `periods_immobility` in `analysis/preprocessing.py`,
-a verbatim port from `ibioml.preprocess_data` (Sebas's
+a verbatim port from `ibioml.preprocess_data` (the lab maintainer's
 `feat/pre-processing` branch, commit `402af75`).
 
 ### 2. Trial transitions
@@ -126,7 +126,7 @@ the end.
 **Why**: a NaN target makes the sample untrainable for a regression
 decoder; no point keeping it.
 
-**Implementation**: inline in `preprocess_data` (Sebas's branch). Not
+**Implementation**: inline in `preprocess_data` (the lab maintainer's branch). Not
 factored into its own function.
 
 ### 4. Low-performance trials
@@ -145,7 +145,7 @@ them as training data would expose the decoder to neural states whose
 behavioural label may not be reliable.
 
 **Implementation**: `get_idx_by_low_performance` in
-`ibioml.preprocess_data` (Sebas's branch, commit `402af75`).
+`ibioml.preprocess_data` (the lab maintainer's branch, commit `402af75`).
 
 ### 5. Recording boundaries (first/last bins of the recording)
 
@@ -202,7 +202,7 @@ during early training trials would differ systematically from its
 response during later trials, biasing the decoder.
 
 **Implementation**: `clean_unstable_neurons` in
-`ibioml.preprocess_data`. New addition by Sebas in `feat/pre-processing`
+`ibioml.preprocess_data`. New addition by the lab maintainer in `feat/pre-processing`
 (not present in `main`).
 
 ## How the filtering is applied mechanically
@@ -292,7 +292,7 @@ during validation (see plots `f3-filter-on-v4b.png` across datasets):
 
 The other filters (NaN, low-performance, recording boundaries,
 low-firing, unstable neurons) have not yet been validated independently
-in this project — they are inherited from Sebas's pipeline with their
+in this project — they are inherited from the lab maintainer's pipeline with their
 parameter defaults and will be exercised once `analysis/preprocessing.py`
 extends beyond `periods_immobility`.
 
@@ -303,7 +303,7 @@ extends beyond `periods_immobility`.
   filters above (they operate on velocity in cm/s and on bin / neuron
   indices).
 - **Migration to `ibioml.preprocess_data`**. The full pipeline currently
-  lives in Sebas's `feat/pre-processing` branch upstream. Once that
+  lives in the lab maintainer's `feat/pre-processing` branch upstream. Once that
   branch merges to `main`, `analysis/preprocessing.py` should be deleted
   and the imports switched to `from ibioml.preprocess_data import …`.
 - **Implementation gap in `analysis/preprocessing.py`**. Today this
@@ -319,7 +319,7 @@ extends beyond `periods_immobility`.
 - `analysis/preprocessing.py` — local port of `periods_immobility`.
 - `exploration/01c-immobility-filter.py` — validation notebook for the
   immobility + trial-transition filter (plots referenced above).
-- `external/scriptspipeline/all-datasets-experiment.py` — Sebas's
+- `external/scriptspipeline/all-datasets-experiment.py` — the lab maintainer's
   reference values for the thresholds.
 - Upstream source: `feat/pre-processing` branch of
   `mariburginlab-labPrograms/IBioML`, commit `402af75`,

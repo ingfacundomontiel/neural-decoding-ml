@@ -55,7 +55,7 @@ The 21-file mapping (canonical lab filename → destination in this repo):
 The lab sources may live in any of `sfn/datasets/`, `san/datasets/`, or
 `datasets/` under the experiments root — for byte-identical duplicates,
 `sfn/datasets/` is the preferred source (per D-010). The complete bundle
-that Sebas distributes (`scriptspipeline/datasets.zip`) contains exactly
+that the lab maintainer distributes (`scriptspipeline/datasets.zip`) contains exactly
 the 21 files listed above with the `_completo` suffix.
 
 ## What "raw" means here
@@ -199,7 +199,7 @@ The lab's `L7` and `N53` files used to ship in two flavours: a `_completo`
 version and an `_original` snapshot, with substantially different sizes.
 An MD5 check (2026-06-19) confirmed that **the `_completo` version is the
 one we have here** as `Pir_L7_naive_bins200ms.mat` / `Pir_N53_naive_bins200ms.mat`
-(byte-identical to Sebas's bundle).
+(byte-identical to the lab bundle).
 
 The `_original` files are an older pre-processing snapshot that the lab no
 longer ships in its production pipeline. They are kept on the developer

@@ -115,7 +115,7 @@ position-to-cm conversion factor.
 > (`analysis/preprocessing.py`) currently marks only a 1 s window
 > before each `trialFinalBin` as trial-transition padding. The remaining
 > ~1.2 s of the rig timeout is not filtered explicitly. Whether those
-> bins should also be removed is a decision to take with Sebas — they
+> bins should also be removed is a decision to take with the lab — they
 > may carry locomotion signal worth keeping, or they may be uninformative
 > tail that contaminates the decoder.
 
