@@ -40,7 +40,7 @@ ROOT = Path(__file__).resolve().parent.parent if "__file__" in dir() else Path.c
 sys.path.insert(0, str(ROOT))
 
 from analysis.loaders import CM_PER_DEGREE, load_mat, position_in_cm  # noqa: E402
-from analysis.preprocessing import periods_immobility  # noqa: E402
+from ibioml.preprocess_data import periods_immobility  # noqa: E402
 
 DATA_PATH = Path(os.environ.get(
     "DATASET",

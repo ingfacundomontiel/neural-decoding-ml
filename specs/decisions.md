@@ -287,3 +287,55 @@ original D-008 purpose.
 
 **Cost.** A new clone won't have `_legacy/`. To rebuild it, the developer
 needs access to the original workspace or the lab paths. Acceptable.
+
+---
+
+## D-015 — Bump `ibioml` submodule pin to `upstream/main` (supersedes audit-baseline pin from D-002)
+
+**Date:** 2026-07-05
+**Status:** accepted
+
+**Context.** D-002 (2026-04-17) fixed the submodule pin at
+`thesis/audit-baseline` (commit `4e477c3`) as an anchor for Phase 1's
+audit reproducibility. During Phase 2 the audit findings that mattered
+for downstream work were contributed upstream via PR #9 (preprocess
+filters, merged 2026-07-03) and PR #10 (rewOdor load, setup URL,
+`__version__`, merged 2026-07-05). Both PRs are now on
+`mariburginlab-labPrograms/IBioML` `main` at commit `acbbf3e`.
+
+Continuing to train models against `4e477c3` would mean using a
+`preprocess_data` that:
+
+- has neither `periods_immobility` nor `clean_unstable_neurons`;
+- still drops `rewOdor` (loads `rewCtxt` twice);
+- reports `__version__ == "0.1.2"` regardless of the installed release.
+
+**Decision.** Bump the submodule pin from `4e477c3` (`thesis/audit-baseline`)
+to `acbbf3e` (`upstream/main`). Along with the bump:
+
+- Retire `analysis/preprocessing.py`. It was a verbatim copy of
+  `periods_immobility` used only because the pin blocked importing
+  directly from the lib. Its own module docstring anticipated this
+  retirement.
+- Update `exploration/01c-immobility-filter.py:43` to import
+  `periods_immobility` from `ibioml.preprocess_data` (same signature,
+  now shipped upstream).
+
+`analysis/loaders.py` stays — it ships lab-specific `.mat` constants
+(corridor geometry, `CM_PER_DEGREE`) that don't live in the lib.
+
+**Alternatives.**
+
+- Cherry-pick individual fixes into `thesis/audit-baseline` — duplicates
+  work every time upstream advances, requires maintaining two divergent
+  branches on the fork.
+- Move to `pip install ibioml @ git+...` without a submodule — simpler
+  in requirements, but loses the ability to edit/debug the lib in-place
+  on the GPU host.
+
+**Why.** The audit-baseline anchor served its purpose: audit findings
+are now upstream, and `docs/ibioml-audit.md` still cites `4e477c3` for
+provenance. Going forward, the thesis tracks `upstream/main` and
+re-bumps as the lib advances. Reviewers can still walk the submodule
+commit graph to see the exact `ibioml` state behind each result — the
+property D-002 was really protecting.
