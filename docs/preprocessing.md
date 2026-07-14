@@ -16,9 +16,9 @@ Related documents:
 
 ## Pipeline overview
 
-Seven distinct filters are applied to each recording. Five remove **time
+Eight distinct filters are applied to each recording. Six remove **time
 bins** (rows of the feature matrix `X`); two remove **neurons** (columns
-of `X`). All seven contribute to a single `indices_to_remove` list (for
+of `X`). All eight contribute to a single `indices_to_remove` list (for
 rows) or `neurons_to_remove` list (for columns), which are applied **after**
 `get_spikes_with_history`.
 
@@ -29,8 +29,9 @@ rows) or `neurons_to_remove` list (for columns), which are applied **after**
 | 3 | NaN positions | bins where `position == NaN` | rows |
 | 4 | Low-performance trials | all bins of trials with `dPrime < threshDPrime` (defaults: `threshDPrime = 2` expert, `-1.1` naive) | rows |
 | 5 | Recording boundaries | first `bins_before` (5) and last `bins_after` (5) bins of the whole recording | rows |
-| 6 | Low-firing-rate neurons | neurons with mean firing rate below `firingMinimo` (default `0.1 Hz`) | columns |
-| 7 | Unstable neurons | neurons whose firing rate drift index exceeds `threshDrift` across `numBlocks` halves of the recording (defaults: `threshDrift = 0.5`, `numBlocks = 2`) | columns |
+| 6 | Out-of-corridor trials | all bins of trials whose peak position exceeds `thPosition` (default `1500°`) — session-start / segmentation artifact | rows |
+| 7 | Low-firing-rate neurons | neurons with mean firing rate below `firingMinimo` (default `0.1 Hz`) | columns |
+| 8 | Unstable neurons | neurons whose firing rate drift index exceeds `threshDrift` across `numBlocks` halves of the recording (defaults: `threshDrift = 0.5`, `numBlocks = 2`) | columns |
 
 ## Time-bin filters (eliminate rows of X)
 
@@ -159,6 +160,46 @@ time bins of the entire recording are always removed. Their
 `periods_immobility` itself does **not** handle these — they are added
 separately in the caller.
 
+### 6. Out-of-corridor trials (session-start artifact)
+
+Trials whose **peak position** exceeds `thPosition` degrees are removed in
+full — every bin of the trial is added to `indices_to_remove`.
+
+**What it does**: for each trial, the maximum of the `position` signal is
+compared against `thPosition` (default `1500°` ≈ 183 cm). A trial that ramps
+past that bound never happened inside the physical corridor (natural end
+~60 cm, licking-drift ceiling ~147 cm across every dataset), so the whole
+trial is discarded.
+
+**Why**: the three DG-naive recordings (`DG_S38`, `DG_S39`, `DG_S41`) each
+contain a single malformed first trial where the encoder keeps accumulating
+position for minutes without a teleport — up to ~26500° in `DG_S41`. Such a
+trial can hold 13–21 % of all bins at positions 40× the corridor scale, which
+destroys the global standardisation of the position target and collapses the
+position decoder (test R² down to −47). See
+[`trial-structure.md`](./trial-structure.md#out-of-corridor-session-start-artefact-dg-naive).
+
+**Not redundant with the immobility filter**: during these trials the animal is
+*running*, so the bins carrying the absurd positions have velocity > `thVel`
+and survive filter #1. Only a trial-level, position-based rule removes them.
+The criterion is **position**, not **duration**, on purpose: a valid trial
+where the animal stays still is also long, but its position stays bounded —
+duration cannot separate the two, peak position can.
+
+**Blast radius**: with `thPosition = 1500°`, this filter removes exactly one
+trial from each of the three DG-naive datasets and **nothing** from any of the
+other 18 datasets (verified across all recordings).
+
+**Parameters**:
+
+| Parameter | Default | Meaning |
+|---|---|---|
+| `thPosition` | 1500° (~183 cm) | peak-position bound; a trial above it is dropped |
+
+**Implementation**: `get_idx_by_out_of_corridor_trials` in
+`ibioml.preprocess_data`; its indices are union-merged into
+`indices_to_remove` alongside the other row filters, before standardisation.
+
 ## Neuron filters (eliminate columns of X)
 
 Two filters operate on the neuron axis after the row filtering above is
@@ -166,7 +207,7 @@ complete. They are computed from the cleaned `neural_data` (i.e. with
 immobility, NaN, etc. already removed) so the firing-rate estimates
 reflect only valid navigation periods.
 
-### 6. Low-firing-rate neurons
+### 7. Low-firing-rate neurons
 
 Neurons whose mean firing rate over the surviving bins falls below
 `firingMinimo` are removed.
@@ -181,7 +222,7 @@ and adds dimensionality cost to the feature vector.
 **Implementation**: `clean_neurons_by_low_firing_rate` in
 `ibioml.preprocess_data`.
 
-### 7. Unstable neurons (firing-rate drift)
+### 8. Unstable neurons (firing-rate drift)
 
 Neurons whose firing rate **drifts across the recording** are removed.
 This is different from the "position drift" the corridor produces;
@@ -307,9 +348,9 @@ extends beyond `periods_immobility`.
   branch merges to `main`, `analysis/preprocessing.py` should be deleted
   and the imports switched to `from ibioml.preprocess_data import …`.
 - **Implementation gap in `analysis/preprocessing.py`**. Today this
-  project only ports `periods_immobility`. Filters 3–7 (NaN, low-perf,
-  boundaries, low-firing, unstable) are documented here for completeness
-  but live exclusively in `ibioml.preprocess_data` until the migration.
+  project only ports `periods_immobility`. Filters 3–8 (NaN, low-perf,
+  boundaries, out-of-corridor, low-firing, unstable) are documented here for
+  completeness but live exclusively in `ibioml.preprocess_data`.
 - **History windows** (`get_spikes_with_history`): documented here only
   as far as filter-pipeline mechanics; full description in
   `ibioml.utils.preprocessing_funcs.get_spikes_with_history`.

@@ -339,3 +339,68 @@ provenance. Going forward, the thesis tracks `upstream/main` and
 re-bumps as the lib advances. Reviewers can still walk the submodule
 commit graph to see the exact `ibioml` state behind each result — the
 property D-002 was really protecting.
+
+---
+
+## D-016 — Out-of-corridor trial filter (position-based, not duration-based)
+
+**Date:** 2026-07-14
+**Status:** accepted
+
+**Context.** The batch MLP run (17 datasets × dual target) produced a
+catastrophic position decoder for `DG_S41_naive` (mean test R² ≈ −47; folds to
+−181), with `DG_S38_naive` (−1.1) and `DG_S39_naive` (−0.16) also negative.
+Root cause: each of the three DG-naive recordings has a single malformed
+**first trial** — a session-start artifact where the trial never terminates and
+the encoder accumulates position far past the corridor (up to 26508° ≈ 3240 cm
+in `DG_S41`, vs a valid ceiling of ~1200° ≈ 147 cm across all datasets). That
+one trial holds 13–21 % of all bins; its extreme values wreck the global
+standardisation of the position target. Confirmed with the director as a
+recording artifact. The existing filters missed it: the immobility filter keeps
+the trial's running bins (velocity > `thVel`), and the dPrime filter removed 0
+of its bins.
+
+**Decision.** Add a position-based trial filter,
+`get_idx_by_out_of_corridor_trials`, to `ibioml.preprocess_data`: any trial
+whose **peak position** exceeds `thPosition` degrees (default `1500°` ≈ 183 cm)
+is removed in full, union-merged into `indices_to_remove` before
+standardisation. Threshold is in raw encoder degrees (independent of the cm
+factor). `scripts/preprocess_all.py` passes `thPosition=1500` via
+`DEFAULT_CONFIG`.
+
+**Alternatives.**
+
+- The pre-existing duration filter (`get_idx_by_high_trial_duration`, remove
+  trials with duration > mean+3σ, currently commented out). Rejected: duration
+  conflates the artifact with valid long trials where the animal legitimately
+  stays still (bounded position) — e.g. `DG_S38` has a valid 292 s immobility
+  trial only ~40 s under its mean+3σ threshold. The threshold is also inflated
+  by the outlier itself; it happens to work here by luck of the statistics, not
+  by design. The lab abandoned this filter for exactly this reason.
+- Bin-level removal of under-represented position ranges. Deferred: the
+  artifact's natural unit is the whole trial; bin-level histogram outlier
+  removal risks fragmenting trials and dropping legitimately rare far-corridor
+  bins. A per-trial position-representation analysis is on the backlog
+  independently.
+- Editing `data/raw`. Rejected: raw files are source-of-truth and do-not-modify
+  (D-013). Removal is a reproducible preprocessing-time operation.
+
+**Why.** Peak position is the discriminator that separates the artifact
+(position leaves the corridor) from valid long trials (position bounded);
+duration cannot. The threshold sits in a wide empty gap — max valid peak 1203°,
+min pathological 2488° — so any value in ~1300–2400° gives identical results.
+Verified blast radius: removes exactly one trial from each of
+`DG_S38`/`DG_S39`/`DG_S41` and nothing from the other 18 datasets, so only those
+three need re-running. Unit-tested
+(`external/ibioml/tests/test_out_of_corridor.py`, 5 cases) and confirmed
+end-to-end (removes 3861/3195/3789 bins on the three; 0 on a healthy dataset).
+
+Also confirmed as part of this work: the `CM_PER_DEGREE = 0.1222` conversion
+factor is correct (verified with the director, 2026-07-14) — updated in
+`analysis/loaders.py` and `docs/trial-structure.md`, and removed from the open
+questions.
+
+**Follow-up.** The fix currently lives on the fork's working tree. Upstream it
+to `mariburginlab-labPrograms/IBioML` via PR once validated by the re-run (per
+D-012 test-first, D-002/D-015 submodule flow). Re-run preprocessing + MLP for
+the three DG-naive datasets on the GPU host.

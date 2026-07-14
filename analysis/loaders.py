@@ -11,7 +11,7 @@ The conversion factor to corridor centimetres was copied from
 `marinburginlab-labPrograms/.../san/all-datasets-plot-predictions.py`
 line 222 (`cm_per_degree = 0.1222`). The comment in that file mentions
 "mm → cm" but the variable name and the upstream rig (rotary encoder on
-a wheel) point to degrees. Confirm with the director if this matters.
+a wheel) point to degrees. Confirmed correct by the director, 2026-07-14.
 """
 
 from __future__ import annotations

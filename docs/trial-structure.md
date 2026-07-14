@@ -27,6 +27,9 @@ Source of the factor: variable `cm_per_degree` in
 same constant is exported by `analysis/loaders.py` as `CM_PER_DEGREE` to
 keep code and docs in sync.
 
+> **Confirmed (2026-07-14).** The `0.1222` factor was verified with the
+> director and is correct. This is no longer a working assumption.
+
 ## Virtual corridor layout
 
 | Landmark | Position (cm) | Notes |
@@ -131,6 +134,32 @@ non-rewarded trial.
 
 This is a deliberate rig behaviour, not a recording artefact.
 
+## Out-of-corridor session-start artefact (DG-naive)
+
+Separately from the legitimate drift above, the three **DG-naive** recordings
+(`DG_S38`, `DG_S39`, `DG_S41`) each contain a single malformed **first trial**:
+the trial never terminates for several minutes and the encoder keeps
+accumulating position far past the corridor — up to **26508°** (~3240 cm) in
+`DG_S41`, versus a valid trial that never exceeds **~1200°** (~147 cm) anywhere
+in the project. Confirmed with the director (2026-07-14) as a session-start
+recording artefact, not real behaviour.
+
+The distinction that matters: a *valid* long trial (the animal stops and stays
+still) is long in **duration** but its **position stays bounded** within the
+corridor. This artefact is long in duration **and** its position leaves the
+corridor entirely, because the animal keeps running while the trial-termination
+logic is inactive. Duration alone therefore cannot separate the two — **peak
+position** can.
+
+Left unfiltered, this single trial holds 13–21 % of all bins with positions
+40× the corridor scale, which destroys the global standardisation of the
+position target and collapses the position decoder (test R² as low as −47 for
+`DG_S41`). It is removed in preprocessing by the **out-of-corridor trial
+filter** (`thPosition`, default 1500° ≈ 183 cm) — see
+[`preprocessing.md`](./preprocessing.md) and the decision record in
+[`specs/decisions.md`](../specs/decisions.md). Every other dataset is left
+untouched by this filter.
+
 ## Constants in code
 
 The landmarks above are exported as module-level constants in
@@ -150,6 +179,8 @@ document with the new value and date.
 
 - Exact natural corridor length (currently estimated 60–65 cm).
 - Exact width of the reward zone (currently 1–2 cm).
-- Exact `cm_per_degree` calibration factor (currently 0.1222).
 - Whether the `rewCtxt` / `rewOdor` flags overlap exactly with the visible
   context window, or have lead/lag relative to it.
+
+(The `cm_per_degree` calibration factor, `0.1222`, was confirmed with the
+director on 2026-07-14 — see [Position units](#position-units) above.)

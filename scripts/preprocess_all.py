@@ -45,6 +45,7 @@ DEFAULT_CONFIG = {
     "binLength": 200,     # ms
     "thVel": 1,           # cm/s
     "thDur": 4,           # s
+    "thPosition": 1500,   # deg — drop out-of-corridor trials (peak position above this)
 }
 
 THRESH_DPRIME_EXPERT = 2
@@ -137,6 +138,7 @@ def process_one(region: str, name: str, mat_path: Path, force: bool) -> dict | N
                 binLength=DEFAULT_CONFIG["binLength"],
                 thVel=DEFAULT_CONFIG["thVel"],
                 thDur=DEFAULT_CONFIG["thDur"],
+                thPosition=DEFAULT_CONFIG["thPosition"],
                 data_dir=str(region_out),
             )
     finally:
