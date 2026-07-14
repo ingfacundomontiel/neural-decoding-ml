@@ -25,6 +25,10 @@ import os
 import pandas as pd
 import numpy as np
 from pathlib import Path
+import matplotlib
+# Use a non-interactive backend so `plt.show()` doesn't pop up a window for
+# every figure when this script is run from the CLI. Files still get saved.
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -427,60 +431,87 @@ print("=" * 100)
 print("VISUALIZACIÓN DE CANTIDAD DE DATOS POR DATASET")
 print("=" * 100)
 
-def create_data_quantity_plot(results_df, csv_path='all-datasets-preprocessed.csv', save_path=None, figsize=(12, 8)):
-    """Crea gráfico de dispersión: Neuronas vs Trials por dataset usando datos del CSV"""
-    
+def create_data_quantity_plot(results_df, save_path=None, figsize=(12, 8)):
+    """Crea gráfico de dispersión: Neuronas vs Trials por dataset.
+
+    Post-preprocess counts, tomados directamente de nuestros artefactos:
+      • n_neurons, time_bins ← data/processed/preprocess_report.csv
+        (columnas `kept_neurons` y `kept_bins`).
+      • n_trials             ← results/<study>/training_results/fold_1/results.json
+        (train_trials + val_trials + test_trials — todos los folds suman lo mismo).
+      • features             ← n_neurons × (bins_before + bins_current + bins_after)
+    """
     if results_df.empty:
         print("❌ No hay datos disponibles para el gráfico")
         return None, None
-    
-    # Cargar datos del CSV
+
+    # Cargar preprocess report (kept_neurons, kept_bins por dataset).
     try:
-        import pandas as pd
-        csv_data = pd.read_csv(csv_path)
-        print(f"   📊 Cargando datos desde: {csv_path}")
-        print(f"   📋 Datasets en CSV: {len(csv_data)}")
+        report_df = pd.read_csv('data/processed/preprocess_report.csv').set_index('dataset')
     except Exception as e:
-        print(f"❌ Error cargando CSV: {e}")
+        print(f"❌ Error cargando preprocess_report.csv: {e}")
         return None, None
-    
-    
-    # Preparar datos para el gráfico
+
+    # Ventana temporal en bins (bins_before + bins_current + bins_after).
+    BINS_WINDOW = 5
+
+    # Region dir map: needed to locate the pickle fallback for datasets not in
+    # the CSV. Mirrors REGION_TO_DIR in 04-decoding-predictions.py.
+    _region_to_dir = {"pir_experto": "piriform", "pir_naive": "piriform",
+                      "CA3_experto": "ca3", "CA3_naive": "ca3",
+                      "DG_experto": "dg", "DG_naive": "dg"}
+
     plot_data = []
-    
     for _, row in results_df.iterrows():
-        dataset_name = row['dataset_name']
-        csv_name = name_mapping.get(dataset_name)
-        
-        if csv_name:
-            # Buscar datos en el CSV
-            csv_row = csv_data[csv_data['Dataset'] == csv_name]
-            
-            if not csv_row.empty:
-                csv_row = csv_row.iloc[0]  # Tomar la primera coincidencia
-                
-                n_neurons = csv_row['Neuronas']
-                n_trials = csv_row['Ensayos']  # Usar Ensayos (no Time bins)
-                time_bins = csv_row['Time bins']
-                features = csv_row['Features']
-                
-                plot_data.append({
-                    'dataset_name': dataset_name,
-                    'description': row['description'],
-                    'dataset_type': row['dataset_type'],
-                    'n_neurons': n_neurons,
-                    'n_trials': n_trials,
-                    'time_bins': time_bins,
-                    'features': features,
-                    'mean_test_r2': row['mean_test_r2']
-                })
-                
-                print(f"   ✅ {dataset_name}: {n_neurons} neuronas, {n_trials} ensayos, {time_bins:,} time bins")
-            else:
-                print(f"   ⚠️  No encontrado en CSV: {csv_name}")
+        study_dir_name = row['dataset_name']            # e.g. mlp_Pir_L5_expert_bins200ms_dual
+        stem = study_dir_name[len("mlp_"):-len("_dual")]  # e.g. Pir_L5_expert_bins200ms
+
+        # Post-preprocess bins / neurons — CSV first, pickle fallback for rows
+        # skipped in the last preprocess_all.py run (e.g. Pir_L5 whose output
+        # already existed on the GPU and was skipped from the report).
+        if stem in report_df.index:
+            n_neurons = int(report_df.loc[stem, 'kept_neurons'])
+            time_bins = int(report_df.loc[stem, 'kept_bins'])
         else:
-            print(f"   ⚠️  Sin mapeo para: {dataset_name}")
-    
+            region_dir = _region_to_dir.get(row['dataset_type'])
+            pkl_path = Path(f"data/processed/{region_dir}/{stem}_flat.pickle") if region_dir else None
+            if pkl_path is not None and pkl_path.exists():
+                import pickle
+                with pkl_path.open('rb') as f:
+                    X, _y, _T = pickle.load(f)
+                time_bins = int(X.shape[0])
+                n_neurons = int(X.shape[1] // BINS_WINDOW)
+                print(f"   ↩️  {stem}: not in CSV — read from pickle "
+                      f"({n_neurons} neurons, {time_bins} bins)")
+            else:
+                print(f"   ⚠️  {stem}: not in CSV and no local pickle, skip")
+                continue
+
+        # Post-preprocess trials from any fold's results.json (all folds sum the same).
+        fold_json_path = os.path.join(row['study_path'], 'training_results', 'fold_1', 'results.json')
+        try:
+            with open(fold_json_path) as f:
+                fold = json.load(f)
+            n_trials = (len(fold.get('train_trials', []))
+                        + len(fold.get('val_trials', []))
+                        + len(fold.get('test_trials', [])))
+        except Exception as e:
+            print(f"   ⚠️  {stem}: no pude leer fold_1/results.json ({e}), skip")
+            continue
+
+        features = n_neurons * BINS_WINDOW
+        plot_data.append({
+            'dataset_name': study_dir_name,
+            'description': row['description'],
+            'dataset_type': row['dataset_type'],
+            'n_neurons': n_neurons,
+            'n_trials': n_trials,
+            'time_bins': time_bins,
+            'features': features,
+            'mean_test_r2': row['mean_test_r2'],
+        })
+        print(f"   ✅ {row['description']}: {n_neurons} neurons, {n_trials} trials, {time_bins:,} bins")
+
     if not plot_data:
         print("❌ No se pudieron extraer datos de dimensiones")
         return None, None
