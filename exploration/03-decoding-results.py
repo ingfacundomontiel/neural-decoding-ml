@@ -530,16 +530,15 @@ def create_data_quantity_plot(results_df, save_path=None, figsize=(12, 8)):
             color = get_color_by_type(dataset_type)
             english_label = type_mapping.get(dataset_type, dataset_type.capitalize())
             ax.scatter(
-                type_data['n_trials'], 
+                type_data['n_trials'],
                 type_data['n_neurons'],
-                marker='.',
-                s=150,  # Tamaño de las cruces
+                marker='X',
+                s=200,  # Tamaño de las cruces (matches position_vs_velocity_scatter)
                 color=color,
                 alpha=0.8,
                 label=english_label,
-                #label=dataset_type.capitalize(),
                 edgecolors='black',
-                linewidth=1
+                linewidth=1.5,
             )
     
     # Personalización del gráfico
@@ -640,12 +639,131 @@ def create_data_quantity_plot(results_df, save_path=None, figsize=(12, 8)):
     
     return fig, ax
 
-# Generar el gráfico si tenemos datos
+
+def create_data_quantity_plot_pre(results_df, save_path=None, figsize=(12, 8)):
+    """Same as `create_data_quantity_plot` but reads raw .mat files.
+
+    Sources:
+      • n_neurons, time_bins ← neuronActivity.shape from data/raw/<region>/<stem>.mat
+      • n_trials             ← len(trialFinalBin)
+
+    Same visual style so pre/post plots can be compared side-by-side.
+    """
+    from scipy.io import loadmat
+
+    if results_df.empty:
+        print("❌ No hay datos disponibles para el gráfico")
+        return None, None
+
+    _region_to_dir = {"pir_experto": "piriform", "pir_naive": "piriform",
+                      "CA3_experto": "ca3", "CA3_naive": "ca3",
+                      "DG_experto": "dg", "DG_naive": "dg"}
+
+    plot_data = []
+    for _, row in results_df.iterrows():
+        study_dir_name = row['dataset_name']
+        stem = study_dir_name[len("mlp_"):-len("_dual")]
+        region_dir = _region_to_dir.get(row['dataset_type'])
+        if region_dir is None:
+            print(f"   ⚠️  {stem}: unknown region for type {row['dataset_type']}, skip")
+            continue
+        mat_path = Path(f"data/raw/{region_dir}/{stem}.mat")
+        if not mat_path.exists():
+            print(f"   ⚠️  {stem}: raw .mat not found ({mat_path}), skip")
+            continue
+        m = loadmat(mat_path)
+        time_bins = int(m['neuronActivity'].shape[0])
+        n_neurons = int(m['neuronActivity'].shape[1])
+        n_trials = int(len(m['trialFinalBin'].ravel()))
+        plot_data.append({
+            'description': row['description'],
+            'dataset_type': row['dataset_type'],
+            'n_neurons': n_neurons,
+            'n_trials': n_trials,
+            'time_bins': time_bins,
+        })
+        print(f"   ✅ {row['description']} (pre): {n_neurons} neurons, {n_trials} trials, {time_bins:,} bins")
+
+    if not plot_data:
+        print("❌ No pre-preprocess data available")
+        return None, None
+
+    plot_df = pd.DataFrame(plot_data)
+
+    plt.style.use('default')
+    fig, ax = plt.subplots(figsize=figsize, dpi=200)
+
+    for dataset_type in DATASET_TYPE_ORDER:
+        type_data = plot_df[plot_df['dataset_type'] == dataset_type]
+        if not type_data.empty:
+            color = get_color_by_type(dataset_type)
+            english_label = type_mapping.get(dataset_type, dataset_type.capitalize())
+            ax.scatter(
+                type_data['n_trials'],
+                type_data['n_neurons'],
+                marker='X',
+                s=200,
+                color=color,
+                alpha=0.8,
+                label=english_label,
+                edgecolors='black',
+                linewidth=1.5,
+            )
+
+    ax.set_xlabel('Number of Trials', fontsize=18, fontweight='bold')
+    ax.set_ylabel('Number of Neurons', fontsize=18, fontweight='bold')
+    ax.set_title('Data Quantity per Dataset — Pre-preprocessing\n(Neurons vs Trials)',
+                 fontsize=20, fontweight='bold', pad=20)
+    ax.grid(True, alpha=0.3, linestyle='-', linewidth=0.5)
+    ax.set_axisbelow(True)
+    ax.legend(title='Dataset Type', title_fontsize=16, fontsize=15,
+              loc='upper right', frameon=True, fancybox=True, shadow=True)
+
+    for _, row in plot_df.iterrows():
+        short_name = row['description'].replace(' - ', '\n')
+        if 'DG S19' in row['description']:
+            xytext, ha = (-5, 5), 'right'
+        else:
+            xytext, ha = (5, 5), 'left'
+        ax.annotate(
+            short_name,
+            (row['n_trials'], row['n_neurons']),
+            xytext=xytext, textcoords='offset points',
+            fontsize=13, ha=ha, va='bottom',
+            bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.7),
+        )
+
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+    x_margin = (plot_df['n_trials'].max() - plot_df['n_trials'].min()) * 0.1
+    y_margin = (plot_df['n_neurons'].max() - plot_df['n_neurons'].min()) * 0.1
+    ax.set_xlim(plot_df['n_trials'].min() - x_margin, plot_df['n_trials'].max() + x_margin)
+    ax.set_ylim(plot_df['n_neurons'].min() - y_margin, plot_df['n_neurons'].max() + y_margin)
+
+    plt.tight_layout()
+    if save_path:
+        if save_path.endswith('.svg'):
+            plt.savefig(save_path, format='svg', bbox_inches='tight')
+        else:
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"📁 Gráfico (pre-preprocessing) guardado en: {save_path}")
+    plt.show()
+    return fig, ax
+
+
+# Generar los gráficos (pre y post preprocessing) si tenemos datos
 if not results_df.empty:
-    print("📊 Creando gráfico de cantidad de datos...")
+    print("📊 Creando gráfico de cantidad de datos (post-preprocessing)...")
     fig_data, ax_data = create_data_quantity_plot(
         results_df,
         save_path=f'{plot_path}/data_quantity_plot.svg',
+        figsize=(12, 8)
+    )
+    print("\n📊 Creando gráfico de cantidad de datos (pre-preprocessing)...")
+    fig_data_pre, ax_data_pre = create_data_quantity_plot_pre(
+        results_df,
+        save_path=f'{plot_path}/data_quantity_plot_pre.svg',
         figsize=(12, 8)
     )
 else:

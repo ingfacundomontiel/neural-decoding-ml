@@ -15,6 +15,10 @@ from scipy import io
 from scipy.io import loadmat
 import pandas as pd
 import numpy as np
+import matplotlib
+# Use a non-interactive backend so `plt.show()` doesn't pop up a window for
+# every figure when this script is run from the CLI. Files still get saved.
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
