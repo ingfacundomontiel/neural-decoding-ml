@@ -152,6 +152,139 @@ scope for now.
 - **No scope creep.** If a tangent comes up, note it in `specs/backlog.md` (create
   on demand) and keep moving.
 
+### Phase 5 — Single-target, temporal-window, and confounding-factor experiments
+
+Follow-up experimental phase after the SFN-poster batch. The rule for this
+phase is **one change at a time**: every item below modifies exactly one
+factor vs. the shared baseline. A single run cannot combine two items.
+
+**Shared baseline** (anchor for every delta):
+
+- MLP dual output, `bins_before=2 / bins_current=1 / bins_after=2` (1000 ms window).
+- 14 datasets (17 total minus `DG-Naive-S38`, `DG-Naive-S41`, `Pir-Expert-N59`,
+  excluded from plots).
+- `_withCtxt_flat.pickle` variants (rewCtxt as extra feature).
+- Hyperparam space matching the lab reference: hidden_size 128–512 step 64,
+  num_layers 1–3, dropout 0–0.5, lr log 1e-8→1e-3, batch 32, es_patience 20,
+  num_epochs 200. Optuna 20 trials, 5 outer folds × 1 inner hold-out.
+
+#### Item 1 — Single-output experiments (pos-only, vel-only) — Priority 1
+
+Same baseline, only `output_size=1` and a different pickle target.
+
+- **Datasets**: all **17** (no plot-time exclusions applied at run time; we
+  filter at plotting stage if needed).
+- **`num_exclusive_layers`**: omitted from the model_space for single-target
+  (only applies when there are multiple heads).
+- **Context**: kept ON — `_withCtxt_onlyPosition_flat.pickle` and
+  `_withCtxt_onlyVelocity_flat.pickle`, mirroring the dual baseline.
+- **Volume**: 17 × 2 = 34 experiments.
+- **Estimated GPU wall-time**: ~25–35 h (single tends to be a bit faster
+  than dual due to smaller output layer).
+- **Results dirs**: `results/mlp_<dataset>_bins200ms_pos/` and `_vel/`,
+  emitted by `scripts/run_all_experiments.py --targets pos,vel`.
+- **Post-run**: no cross-run comparison decision yet ("luego vemos" — we'll
+  regenerate the same boxplots and add a comparison table once results are
+  in). Item 5 unblocks after this.
+
+Runbook lives in `docs/experiment-log.md`.
+
+#### Item 4 — `bins_after=0` temporal-window ablation — Priority 2
+
+Regenerate preprocess pickles with `bins_before=2 / bins_current=1 /
+bins_after=0` (600 ms window: 400 ms past + 200 ms present, no future).
+
+- **Target**: dual only for now.
+- **Window sweep**: only `2/1/0` for now. A full ablation
+  (`0/1/2`, `2/1/1`, `2/1/3`, …) is out of scope.
+- **Datasets**: same 14 as the baseline (S38/S41/N59 stay excluded).
+- **Results namespacing**: new top-level dir `results_bins_2_1_0/`
+  (parallel to the current `results/`) so both baselines coexist for
+  side-by-side comparison.
+
+Motivation: quantify how much of the position/velocity decoding relies on
+future information. A large drop vs. `after=2` would suggest the neural
+code precedes behavior.
+
+#### Item 3 — Cap `# bins` per dataset for cross-dataset comparability — Priority 3
+
+Make the per-dataset training data quantity comparable across datasets.
+
+- **Drop CA3-Naive-S30** (7,327 post-preprocess bins) from the batch.
+- **Cap the remaining 13 datasets at 9,020 bins** (post-preprocess), the
+  next minimum (Pir-Naive-N53).
+- **Where the cap is computed**: post-preprocess (after every filter in
+  `preprocess_data`).
+- **Capping strategy — C**: keep the **last** N bins **respecting trial
+  boundaries**. Walk trials backwards from the end of the recording,
+  accumulating whole trials until the total lands at or just below 9,020.
+  Preserves per-trial structure and the "settled behavior" regime at
+  session end.
+- **Effective dataset count**: 13 (14 − S30). `EXCLUDED_DATASETS_FROM_PLOTS`
+  in `03-decoding-results.py` needs the extra entry.
+
+**Open sub-decisions**:
+- Where does the cap live — an option of `preprocess_data` upstream, or a
+  post-preprocess script local to the thesis? (Leaning: local script for
+  iteration speed; upstream later once the strategy is locked.)
+
+#### Item 5 — Position vs. velocity dissociation analysis (queued)
+
+Priority: after Item 1 (needs the pos-only models).
+
+Post-hoc analysis, not a training run. Filter test-set bins where the
+animal's velocity profile breaks its own stereotypy, then re-evaluate the
+R² of the pos-only model on that subset. If R² holds, the decoder is
+genuinely reading position rather than reconstructing it from velocity.
+
+**Open questions to refine before running**:
+- Operational definition of "broken stereotypy" — trial-level velocity
+  mean outlier, bin-level departure from velocity(position) profile,
+  specific pauses, or multi-criteria.
+- Model to use — pos-single (cleaner argument, requires Item 1) vs. dual
+  head (has seen velocity in training).
+- Baseline of comparison — normal-subset R² vs. atypical-subset R².
+- Statistics — bootstrap / CI to handle small-subset noise.
+- Interpretation policy — what does a low R² in atypical bins mean:
+  dissociation refuted, or the subset is out-of-distribution?
+- Which datasets — only experts (stereotypy is clearest there), or all 14?
+
+#### Item 2 — Sparse-position filter (queued)
+
+Priority: last, most methodological refinement pending.
+
+New preprocess filter that removes bins whose corresponding position is
+under-represented in the recording. Motivation: reduce training on
+positions the model can't generalize to.
+
+**Open questions to refine before implementing**:
+- Histogram bin width — 1 cm? 0.5 cm?
+- Threshold — relative (< 1% of total) vs. absolute (< 5 s accumulated)
+  vs. combined (AND / OR).
+- Granularity — per-bin filter, or drop whole trials that touch sparse
+  positions?
+- Natural edge cases — should the filter respect or remove: corridor start
+  (position 0, high count from every trial), reward zone (~60 cm, high
+  when the animal licks), drift zone (> 60 cm, always sparse).
+- Implementation location — new filter inside `ibioml.preprocess_data`
+  (PR upstream, D-012 test-first) vs. thesis-local post-preprocess script.
+- Impact on comparability: applying this filter invalidates all previous
+  batches as a comparison; every result would have to be re-run.
+
+---
+
+### Phase 5 cross-item conventions
+
+- **One change at a time.** Each item modifies exactly one factor vs. the
+  shared baseline above. A run cannot combine two items' changes.
+- **Results namespacing.** New baselines get their own top-level dir (e.g.
+  `results_bins_2_1_0/`) so the SFN-poster run under `results/` stays
+  intact for side-by-side reference.
+- **Experiment log.** Every batch launched adds a row to
+  `docs/experiment-log.md` with date, config, datasets, results dir.
+- **ADRs on methodological items.** Items 2, 3 and 4 warrant an ADR each
+  once their sub-decisions are locked.
+
 ## Backlog (things intentionally deferred)
 
 - Config-driven experiment runner
