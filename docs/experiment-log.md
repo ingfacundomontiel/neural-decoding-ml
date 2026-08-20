@@ -19,7 +19,6 @@ Sorted newest-first.
 - **Date completed**: 2026-07-25 04:05 (last experiment
   `mlp_Pir_N59_expert_bins200ms_vel`).
 - **Wall-time observed**: ~34.1 h (1 day + 10 h).
-- **Host**: `seba@hopfield` (`10.0.198.105`).
 - **Thesis commit at launch**: not recorded (approximate: `7c4ab22`, the
   `docs: Phase 5 plan (…)` commit — pushed the day the batch started).
 - **`ibioml` submodule pin at launch**: `acbbf3e` (unchanged from Batch
@@ -61,7 +60,6 @@ Sorted newest-first.
 
 - **Date launched**: 2026-07-05 22:37 (GPU local time)
 - **Date completed**: 2026-07-06 (approx.)
-- **Host**: `seba@hopfield` (`10.0.198.105`)
 - **Thesis commit at launch**: `6081d7f` (`chore(deps): split torch/numpy
   pins by platform for Blackwell GPU support`).
 - **`ibioml` submodule pin at launch**: `acbbf3e` (upstream/main with
