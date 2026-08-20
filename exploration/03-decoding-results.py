@@ -41,7 +41,7 @@ print("=" * 100)
 # subdirs por region/dataset como en la pipeline original de Sebas).
 results_base_dir = 'results'
 
-plot_path = 'results/plots/performance'
+plot_path = 'results/plots/dual/performance'
 if not os.path.exists(plot_path):
     os.makedirs(plot_path)
     print(f"📁 Directorio '{plot_path}' creado")

@@ -138,7 +138,7 @@ bin_duration = 200  # ms
 
 timeBinsPlot = 2000  # 2000 bins × 200ms = ~6:40 min of recording shown per plot
 
-plot_path = 'results/plots/predictions'
+plot_path = 'results/plots/dual/predictions'
 if not os.path.exists(plot_path):
     os.makedirs(plot_path)
     print(f"📁 Directorio '{plot_path}' creado")
