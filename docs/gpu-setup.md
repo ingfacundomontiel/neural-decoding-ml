@@ -89,6 +89,22 @@ already exists. Pass `--force` to reprocess anyway, or `--only <substring>` to
 target a single dataset (useful for a quick sanity check after copying a new
 `.mat`).
 
+### Filter variants (Phase 5 Item 6 and later)
+
+A preprocessing variant must never overwrite the baseline pickles. Give it its
+own tree with `--out-dir`, and point the batch runner at it with
+`--data-dir` / `--results-dir` so the results land in a sibling of `results/`:
+
+```bash
+python scripts/preprocess_all.py --th-position-end 515 --out-dir data/processed_posend515
+python scripts/run_all_experiments.py --targets pos --only Pir_N31,CA3_S18,DG_S17 \
+    --data-dir data/processed_posend515 --results-dir results_posend515
+```
+
+Both trees are gitignored (`data/processed_*/`, `results_*/`). Bring the
+results back with `rsync` the same way as `results/`, and read them with
+`RESULTS_DIR=results_posend515 python exploration/08-position-error-analysis.py`.
+
 ## 5. Run one training experiment
 
 Full config, dual output (position + velocity), 5 outer folds, Optuna with

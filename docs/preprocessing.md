@@ -16,9 +16,10 @@ Related documents:
 
 ## Pipeline overview
 
-Eight distinct filters are applied to each recording. Six remove **time
+Nine distinct filters are available for each recording. Seven remove **time
 bins** (rows of the feature matrix `X`); two remove **neurons** (columns
-of `X`). All eight contribute to a single `indices_to_remove` list (for
+of `X`). Filters 1–8 form the shared baseline; filter 9 is **off by
+default** and enabled only for the Phase 5 Item 6 variant. All of them contribute to a single `indices_to_remove` list (for
 rows) or `neurons_to_remove` list (for columns), which are applied **after**
 `get_spikes_with_history`.
 
@@ -32,6 +33,7 @@ rows) or `neurons_to_remove` list (for columns), which are applied **after**
 | 6 | Out-of-corridor trials | all bins of trials whose peak position exceeds `thPosition` (default `1500°`) — session-start / segmentation artifact | rows |
 | 7 | Low-firing-rate neurons | neurons with mean firing rate below `firingMinimo` (default `0.1 Hz`) | columns |
 | 8 | Unstable neurons | neurons whose firing rate drift index exceeds `threshDrift` across `numBlocks` halves of the recording (defaults: `threshDrift = 0.5`, `numBlocks = 2`) | columns |
+| 9 | Position tail (**opt-in**) | per trial, every bin from the first position above `thPositionEnd` to the trial end, padded `bins_after` back (default `None` = off; Item 6 uses `515°` ≈ 62.9 cm, the context exit) | rows |
 
 ## Time-bin filters (eliminate rows of X)
 
@@ -200,6 +202,53 @@ other 18 datasets (verified across all recordings).
 `ibioml.preprocess_data`; its indices are union-merged into
 `indices_to_remove` alongside the other row filters, before standardisation.
 
+### 9. Position tail — bins past the context exit (opt-in, Phase 5 Item 6)
+
+**Off by default** (`thPositionEnd=None`). When enabled, for each trial the
+filter finds the first bin whose position exceeds `thPositionEnd` (encoder
+degrees) and flags every bin from `first_crossing − bins_after` to the
+trial's last bin (`trialFinalBin`). Trials that never cross the threshold
+are untouched. NaN positions are ignored when locating the crossing.
+
+**Why**: the single-output position decoders of Batch 002 saturate at the
+context exit — median signed error ≈ 0 inside the context but **−22 cm**
+past it (and **+13 cm** before it), see
+`exploration/08-position-error-analysis.py`. Past the exit the animal is
+consuming the reward, licking, or running on past the end of the corridor;
+the working hypothesis (D-017) is that neural activity there is not
+position-informative and pollutes the fit everywhere else. The lab's linear
+baselines improved when these bins were dropped before training.
+
+**Epoch, not value**: the cut runs from the *first* crossing to the trial
+end even if the encoder dips back below the threshold afterwards. Position
+is monotonic within a trial in practice (≤ 1.5 % negative diffs), so the two
+definitions coincide; the epoch definition is the one that states the
+hypothesis ("everything after leaving the context").
+
+**Padding**: `bins_after` bins before the crossing are removed too, so no
+surviving sample carries post-exit bins in its future history window — the
+same window-safety convention as filters 1–2. Costs ≈ 2 bins per trial
+(~3 % of the data with `bins_after = 2`).
+
+**Overlap**: the last `bins_before` bins of every trial are already removed
+by the trial-transition filter (#2); the two index sets are union-merged.
+
+**Parameters**:
+
+| Parameter | Default | Meaning |
+|---|---|---|
+| `thPositionEnd` | `None` (off) | position bound in encoder degrees; Item 6 uses `515` (≈ 62.9 cm) |
+| `bins_after` | shared | padding before the crossing (same value as the history window) |
+
+**Blast radius** (pilot datasets, `thPositionEnd = 515`, on top of filters
+1–8): `Pir_N31` 18,711 → 13,835 bins (−26 %), `CA3_S18` 13,847 → 8,944
+(−35 %), `DG_S17` 14,897 → 10,550 (−29 %). Variants are written to their own
+tree (`scripts/preprocess_all.py --th-position-end 515 --out-dir
+data/processed_posend515`) so the baseline pickles stay intact.
+
+**Implementation**: `get_idx_by_position_tail` in `ibioml.preprocess_data`,
+unit-tested in `external/ibioml/tests/test_position_tail.py`.
+
 ## Neuron filters (eliminate columns of X)
 
 Two filters operate on the neuron axis after the row filtering above is
@@ -300,6 +349,7 @@ All thresholds sourced from
 | `firingMinimo` | 0.1 Hz | low firing | minimum mean firing rate |
 | `numBlocks` | 2 | unstable neurons | halves the recording |
 | `threshDrift` | 0.5 | unstable neurons | drift index threshold |
+| `thPositionEnd` | `None` (off) / `515°` in Item 6 | position tail | drop post-context-exit bins per trial |
 
 ## Validation: cross-dataset behavior
 

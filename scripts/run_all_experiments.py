@@ -23,6 +23,10 @@ Usage:
     # Dry-run: print planned experiments without launching:
     uv run python scripts/run_all_experiments.py --dry-run
 
+    # Filter-variant batch (Phase 5 Item 6): read variant pickles, write to a sibling results tree:
+    uv run python scripts/run_all_experiments.py --targets pos --only Pir_N31,CA3_S18,DG_S17 \
+        --data-dir data/processed_posend515 --results-dir results_posend515
+
 Idempotent: an experiment whose `results/<study-name>/final_results.json` already exists
 is skipped (pass `--force` to re-run). Missing pickles are reported and counted as
 failures, so if a dataset was not preprocessed the batch tells you which one.
@@ -61,11 +65,20 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument(
         "--only", default="",
-        help="Filter datasets whose name contains this substring.",
+        help="Keep datasets whose name contains any of these comma-separated substrings "
+             "(e.g. `--only Pir_N31,CA3_S18,DG_S17`). Default: no filter.",
     )
     p.add_argument(
         "--with-ctxt", action=argparse.BooleanOptionalAction, default=True,
         help="Use *_withCtxt_*.pickle variants (default: on). --no-with-ctxt to disable.",
+    )
+    p.add_argument(
+        "--data-dir", type=Path, default=DATA_PROC,
+        help=f"Root of the preprocessed pickles. Default: {DATA_PROC.relative_to(ROOT)}/.",
+    )
+    p.add_argument(
+        "--results-dir", type=Path, default=RESULTS,
+        help=f"Root for <study>/ dirs and logs/. Default: {RESULTS.relative_to(ROOT)}/.",
     )
     p.add_argument(
         "--force", action="store_true",
@@ -94,18 +107,18 @@ def parse_target_list(csv: str) -> list[str]:
     return tgts
 
 
-def discover_datasets(regions_filter: set[str] | None, name_filter: str, with_ctxt: bool):
-    """Yield (region, dataset_stem) for every preprocessed bins200ms dataset.
+def discover_datasets(data_dir: Path, regions_filter: set[str] | None, name_filter: list[str],
+                      with_ctxt: bool):
+    """Yield (region, dataset_stem) for every preprocessed bins200ms dataset under *data_dir*.
 
     Detects datasets by their `_flat.pickle` canonical output (the smallest common
     variant produced by preprocess_all.py). Whether we later load the with/without
     context variant is a separate axis controlled by --with-ctxt.
     """
-    if not DATA_PROC.exists():
+    if not data_dir.exists():
         return
     marker = "_withCtxt_flat.pickle" if with_ctxt else "_flat.pickle"
-    marker_excl = "_flat.pickle" if with_ctxt else None  # avoid double-matching the ctxt one
-    for region_dir in sorted(DATA_PROC.iterdir()):
+    for region_dir in sorted(data_dir.iterdir()):
         if not region_dir.is_dir() or region_dir.name == "logs":
             continue
         if regions_filter and region_dir.name not in regions_filter:
@@ -116,12 +129,12 @@ def discover_datasets(regions_filter: set[str] | None, name_filter: str, with_ct
             if not with_ctxt and "_withCtxt_" in pkl.name:
                 continue
             stem = pkl.name[: -len(marker)]  # e.g. "CA3_S17_expert_bins200ms"
-            if name_filter and name_filter not in stem:
+            if name_filter and not any(sub in stem for sub in name_filter):
                 continue
             yield region_dir.name, stem
 
 
-def pickle_for(region: str, stem: str, target: str, with_ctxt: bool) -> Path:
+def pickle_for(data_dir: Path, region: str, stem: str, target: str, with_ctxt: bool) -> Path:
     """Resolve the pickle path for one (dataset, target) combination."""
     ctxt = "withCtxt_" if with_ctxt else ""
     if target == "pos":
@@ -132,7 +145,7 @@ def pickle_for(region: str, stem: str, target: str, with_ctxt: bool) -> Path:
         name = f"{stem}_{ctxt}flat.pickle"
     else:
         raise ValueError(f"Unknown target: {target}")
-    return DATA_PROC / region / name
+    return data_dir / region / name
 
 
 def study_name(stem: str, target: str) -> str:
@@ -140,15 +153,17 @@ def study_name(stem: str, target: str) -> str:
     return f"mlp_{stem}_{target}"
 
 
-def already_done(study: str) -> bool:
-    return (RESULTS / study / "final_results.json").exists()
+def already_done(results_dir: Path, study: str) -> bool:
+    return (results_dir / study / "final_results.json").exists()
 
 
-def build_runner_cmd(pkl: Path, study: str, args: argparse.Namespace) -> list[str]:
+def build_runner_cmd(pkl: Path, study: str, results_dir: Path,
+                     args: argparse.Namespace) -> list[str]:
     cmd = [
         "uv", "run", "python", str(RUNNER),
         "--pickle", str(pkl),
         "--study-name", study,
+        "--save-path", str(results_dir),
     ]
     if args.smoke:
         cmd.append("--smoke")
@@ -165,10 +180,11 @@ def build_runner_cmd(pkl: Path, study: str, args: argparse.Namespace) -> list[st
     return cmd
 
 
-def run_one(pkl: Path, study: str, args: argparse.Namespace) -> tuple[int, float, Path]:
-    """Run one experiment as a subprocess. Log stdout+stderr to results/logs/<study>.log."""
-    log_path = LOGS / f"{study}.log"
-    cmd = build_runner_cmd(pkl, study, args)
+def run_one(pkl: Path, study: str, results_dir: Path,
+            args: argparse.Namespace) -> tuple[int, float, Path]:
+    """Run one experiment as a subprocess. Log stdout+stderr to <results_dir>/logs/<study>.log."""
+    log_path = results_dir / "logs" / f"{study}.log"
+    cmd = build_runner_cmd(pkl, study, results_dir, args)
     t0 = datetime.datetime.now()
     with log_path.open("w") as f:
         f.write(f"# Command: {' '.join(cmd)}\n")
@@ -184,13 +200,15 @@ def main() -> int:
     args = parse_args()
     targets = parse_target_list(args.targets)
     regions_filter = {r for r in args.regions.split(",") if r} if args.regions else None
+    data_dir = args.data_dir.resolve()
+    results_dir = args.results_dir.resolve()
 
-    LOGS.mkdir(parents=True, exist_ok=True)
+    (results_dir / "logs").mkdir(parents=True, exist_ok=True)
 
-    datasets = list(discover_datasets(regions_filter, args.only, args.with_ctxt))
+    name_filter = [sub.strip() for sub in args.only.split(",") if sub.strip()]
+    datasets = list(discover_datasets(data_dir, regions_filter, name_filter, args.with_ctxt))
     if not datasets:
-        print(f"No datasets found under {DATA_PROC.relative_to(ROOT)}/. "
-              "Have you run scripts/preprocess_all.py?")
+        print(f"No datasets found under {data_dir}/. Have you run scripts/preprocess_all.py?")
         return 1
 
     experiments = [(r, s, t) for (r, s) in datasets for t in targets]
@@ -200,15 +218,17 @@ def main() -> int:
           f"({len(datasets)} datasets × {len(targets)} targets)")
     print(f"Targets:  {targets}")
     print(f"With ctxt: {args.with_ctxt}")
+    print(f"Data dir:  {data_dir}")
+    print(f"Results:   {results_dir}")
     if args.smoke:
         print("Smoke mode: ON (reduced params)")
     print("=" * 70)
 
     if args.dry_run:
         for i, (region, stem, target) in enumerate(experiments, 1):
-            pkl = pickle_for(region, stem, target, args.with_ctxt)
+            pkl = pickle_for(data_dir, region, stem, target, args.with_ctxt)
             exists = "✓" if pkl.exists() else "✗ MISSING"
-            done = "  DONE" if already_done(study_name(stem, target)) else ""
+            done = "  DONE" if already_done(results_dir, study_name(stem, target)) else ""
             print(f"  [{i:>3}] {study_name(stem, target):<55}  {exists}{done}")
         return 0
 
@@ -218,25 +238,24 @@ def main() -> int:
 
     for i, (region, stem, target) in enumerate(experiments, 1):
         study = study_name(stem, target)
-        pkl = pickle_for(region, stem, target, args.with_ctxt)
+        pkl = pickle_for(data_dir, region, stem, target, args.with_ctxt)
         prefix = f"[{i:>3}/{len(experiments)}]"
 
         if not pkl.exists():
-            print(f"{prefix} MISS  {study}  (pickle not found: "
-                  f"{pkl.relative_to(ROOT)})")
+            print(f"{prefix} MISS  {study}  (pickle not found: {pkl})")
             failed += 1
             continue
 
-        if already_done(study) and not args.force:
+        if already_done(results_dir, study) and not args.force:
             print(f"{prefix} SKIP  {study}  (final_results.json exists — use --force)")
             skipped += 1
             continue
 
         print(f"{prefix} RUN   {study} ...", flush=True, end="")
-        rc, secs, log = run_one(pkl, study, args)
+        rc, secs, log = run_one(pkl, study, results_dir, args)
         total_secs += secs
         status = "OK  " if rc == 0 else f"FAIL rc={rc}"
-        print(f" {status}  ({secs:>6.0f}s)  log={log.relative_to(ROOT)}")
+        print(f" {status}  ({secs:>6.0f}s)  log={log}")
         if rc == 0:
             passed += 1
         else:
@@ -246,8 +265,8 @@ def main() -> int:
     print("=" * 70)
     print(f"Passed: {passed}   Failed: {failed}   Skipped: {skipped}")
     print(f"Compute time: {total_secs / 60:.1f} min · Wall time: {wall / 60:.1f} min")
-    print(f"Logs: {LOGS.relative_to(ROOT)}/")
-    print(f"Results: {RESULTS.relative_to(ROOT)}/")
+    print(f"Logs: {results_dir / 'logs'}/")
+    print(f"Results: {results_dir}/")
 
     return 0 if failed == 0 else 1
 

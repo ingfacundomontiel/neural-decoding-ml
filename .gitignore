@@ -39,9 +39,12 @@ venv/
 # Processed pickles are derivable — keep them local, don't commit.
 data/processed/*
 !data/processed/.gitkeep
+# Filter-variant pickle trees (e.g. data/processed_posend515/, Phase 5 Item 6)
+data/processed_*/
 
-# Results / logs — generated artifacts stay local
+# Results / logs — generated artifacts stay local (incl. variant trees like results_posend515/)
 results/
+results_*/
 logs/
 *.log
 

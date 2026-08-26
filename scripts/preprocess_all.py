@@ -10,8 +10,11 @@ Usage:
     python scripts/preprocess_all.py                      # process every dataset
     python scripts/preprocess_all.py --only Pir_L5        # single dataset (smoke)
     python scripts/preprocess_all.py --force              # reprocess even if outputs exist
+    # Variant: also drop the post-context tail of every trial (Phase 5 Item 6, D-017),
+    # written to its own tree so the baseline pickles stay intact:
+    python scripts/preprocess_all.py --th-position-end 515 --out-dir data/processed_posend515
 
-Outputs (all under `data/processed/`):
+Outputs (all under `data/processed/`, or `--out-dir`):
 - `<region>/<dataset>_*.pickle` — the 12 pickle variants preprocess_data emits.
 - `logs/<dataset>.log` — captured stdout for that dataset's preprocess run.
 - `preprocess_report.csv` — one row per dataset, machine-readable.
@@ -65,6 +68,17 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Reprocess even if the canonical output pickle already exists.",
     )
+    p.add_argument(
+        "--th-position-end", type=float, default=None, metavar="DEG",
+        help="Drop, per trial, every bin from the first position above this threshold "
+             "(encoder degrees) to the trial end, padded by bins_after (D-017). "
+             "Default: disabled (baseline pipeline).",
+    )
+    p.add_argument(
+        "--out-dir", type=Path, default=DATA_OUT,
+        help=f"Output root for pickles/reports. Default: {DATA_OUT.relative_to(ROOT)}/. "
+             "Use a sibling dir (e.g. data/processed_posend515) for filter variants.",
+    )
     return p.parse_args()
 
 
@@ -105,11 +119,12 @@ def get_commit(cwd: Path) -> str:
         return "unknown"
 
 
-def process_one(region: str, name: str, mat_path: Path, force: bool) -> dict | None:
+def process_one(region: str, name: str, mat_path: Path, force: bool,
+                out_dir: Path, config: dict) -> dict | None:
     """Run preprocess_data for a single dataset. Returns a report row or None if skipped."""
-    region_out = DATA_OUT / region
+    region_out = out_dir / region
     region_out.mkdir(parents=True, exist_ok=True)
-    logs_dir = DATA_OUT / "logs"
+    logs_dir = out_dir / "logs"
     logs_dir.mkdir(parents=True, exist_ok=True)
 
     cohort, thresh = parse_cohort(name)
@@ -130,15 +145,16 @@ def process_one(region: str, name: str, mat_path: Path, force: bool) -> dict | N
             result = preprocess_data(
                 file_path=str(mat_path),
                 file_name_to_save=name,
-                bins_before=DEFAULT_CONFIG["bins_before"],
-                bins_after=DEFAULT_CONFIG["bins_after"],
-                bins_current=DEFAULT_CONFIG["bins_current"],
+                bins_before=config["bins_before"],
+                bins_after=config["bins_after"],
+                bins_current=config["bins_current"],
                 threshDPrime=thresh,
-                firingMinimo=DEFAULT_CONFIG["firingMinimo"],
-                binLength=DEFAULT_CONFIG["binLength"],
-                thVel=DEFAULT_CONFIG["thVel"],
-                thDur=DEFAULT_CONFIG["thDur"],
-                thPosition=DEFAULT_CONFIG["thPosition"],
+                firingMinimo=config["firingMinimo"],
+                binLength=config["binLength"],
+                thVel=config["thVel"],
+                thDur=config["thDur"],
+                thPosition=config["thPosition"],
+                thPositionEnd=config["thPositionEnd"],
                 data_dir=str(region_out),
             )
     finally:
@@ -162,6 +178,7 @@ def process_one(region: str, name: str, mat_path: Path, force: bool) -> dict | N
         "pct_removed_immobility": result["proportion_immobility"],
         "pct_removed_low_perf": result["proportion_low_performance"],
         "pct_removed_nan_pos": result["proportion_nan_position"],
+        "pct_removed_position_tail": result.get("proportion_position_tail", 0.0),
         "kept_neurons": result["neurons_Kept"],
         "low_firing_neurons": result["low_firing_neurons"],
         "unstable_neurons": result["unstable_neurons"],
@@ -171,15 +188,16 @@ def process_one(region: str, name: str, mat_path: Path, force: bool) -> dict | N
     return row
 
 
-def write_csv(rows: list[dict]) -> Path:
-    csv_path = DATA_OUT / "preprocess_report.csv"
+def write_csv(rows: list[dict], out_dir: Path) -> Path:
+    csv_path = out_dir / "preprocess_report.csv"
     pd.DataFrame(rows).to_csv(csv_path, index=False)
     print(f"[OUT ] {csv_path.relative_to(ROOT)}")
     return csv_path
 
 
-def write_md_report(rows: list[dict], thesis_sha: str, ibioml_sha: str) -> Path:
-    md_path = DATA_OUT / "preprocess_report.md"
+def write_md_report(rows: list[dict], thesis_sha: str, ibioml_sha: str,
+                    out_dir: Path, config: dict) -> Path:
+    md_path = out_dir / "preprocess_report.md"
     now = datetime.datetime.now().isoformat(timespec="seconds")
     df = pd.DataFrame(rows)
     ok = df[df["success"]] if "success" in df.columns else df
@@ -191,7 +209,7 @@ def write_md_report(rows: list[dict], thesis_sha: str, ibioml_sha: str) -> Path:
         "",
         "## Config",
         "",
-        *[f"- `{k}` = {v}" for k, v in DEFAULT_CONFIG.items()],
+        *[f"- `{k}` = {v}" for k, v in config.items()],
         f"- `threshDPrime` = {THRESH_DPRIME_EXPERT} (expert) / {THRESH_DPRIME_NAIVE} (naive) — derived from filename",
         "",
         "## Summary",
@@ -204,7 +222,7 @@ def write_md_report(rows: list[dict], thesis_sha: str, ibioml_sha: str) -> Path:
     lines.append("")
     lines.append("## Per-dataset detail")
     lines.append("")
-    lines.append("| Dataset | Cohort | Bins kept | % removed (immob / lowperf / nan) | Neurons kept | Dropped (lowfire / unstable) |")
+    lines.append("| Dataset | Cohort | Bins kept | % removed (immob / lowperf / nan / postail) | Neurons kept | Dropped (lowfire / unstable) |")
     lines.append("|---|---|---:|---:|---:|---:|")
     for _, r in df.iterrows():
         if not r.get("success"):
@@ -213,7 +231,8 @@ def write_md_report(rows: list[dict], thesis_sha: str, ibioml_sha: str) -> Path:
         removed = (
             f"{r['pct_removed_immobility']:.1f} / "
             f"{r['pct_removed_low_perf']:.1f} / "
-            f"{r['pct_removed_nan_pos']:.1f}"
+            f"{r['pct_removed_nan_pos']:.1f} / "
+            f"{r.get('pct_removed_position_tail', 0.0):.1f}"
         )
         dropped = f"{int(r['low_firing_neurons'])} / {int(r['unstable_neurons'])}"
         lines.append(
@@ -226,11 +245,11 @@ def write_md_report(rows: list[dict], thesis_sha: str, ibioml_sha: str) -> Path:
     return md_path
 
 
-def write_readme(thesis_sha: str, ibioml_sha: str) -> Path:
-    readme = DATA_OUT / "README.md"
+def write_readme(thesis_sha: str, ibioml_sha: str, out_dir: Path, config: dict) -> Path:
+    readme = out_dir / "README.md"
     now = datetime.datetime.now().isoformat(timespec="seconds")
     lines = [
-        "# data/processed/",
+        f"# {out_dir.relative_to(ROOT) if out_dir.is_relative_to(ROOT) else out_dir}/",
         "",
         f"Autogenerated by `scripts/preprocess_all.py` on {now}.",
         "",
@@ -239,7 +258,7 @@ def write_readme(thesis_sha: str, ibioml_sha: str) -> Path:
         "",
         "## Config used",
         "",
-        *[f"- `{k}` = {v}" for k, v in DEFAULT_CONFIG.items()],
+        *[f"- `{k}` = {v}" for k, v in config.items()],
         f"- `threshDPrime` = {THRESH_DPRIME_EXPERT} (expert) / {THRESH_DPRIME_NAIVE} (naive)",
         "",
         "## Files",
@@ -266,14 +285,18 @@ def main() -> int:
         print(f"No *_bins200ms.mat found under {DATA_RAW}{target}.")
         return 1
 
+    out_dir = args.out_dir.resolve()
+    config = {**DEFAULT_CONFIG, "thPositionEnd": args.th_position_end}
+
     print(f"Processing {len(datasets)} dataset(s)")
-    print(f"Config: {DEFAULT_CONFIG}")
-    print(f"Output: {DATA_OUT.relative_to(ROOT)}/")
+    print(f"Config: {config}")
+    print(f"Output: {out_dir.relative_to(ROOT) if out_dir.is_relative_to(ROOT) else out_dir}/")
     print("-" * 60)
 
     rows: list[dict] = []
     for region, name, mat_path in datasets:
-        row = process_one(region, name, mat_path, force=args.force)
+        row = process_one(region, name, mat_path, force=args.force,
+                          out_dir=out_dir, config=config)
         if row is not None:
             rows.append(row)
 
@@ -284,9 +307,9 @@ def main() -> int:
     print("-" * 60)
     thesis_sha = get_commit(ROOT)
     ibioml_sha = get_commit(ROOT / "external" / "ibioml")
-    write_csv(rows)
-    write_md_report(rows, thesis_sha, ibioml_sha)
-    write_readme(thesis_sha, ibioml_sha)
+    write_csv(rows, out_dir)
+    write_md_report(rows, thesis_sha, ibioml_sha, out_dir, config)
+    write_readme(thesis_sha, ibioml_sha, out_dir, config)
 
     return 0
 
