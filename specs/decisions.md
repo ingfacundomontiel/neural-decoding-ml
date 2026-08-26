@@ -404,3 +404,132 @@ questions.
 to `mariburginlab-labPrograms/IBioML` via PR once validated by the re-run (per
 D-012 test-first, D-002/D-015 submodule flow). Re-run preprocessing + MLP for
 the three DG-naive datasets on the GPU host.
+
+---
+
+## D-017 — Position-tail filter: drop bins past the context exit (trial-epoch based, padded)
+
+**Date:** 2026-08-26
+**Status:** accepted (threshold provisional — see Follow-up)
+
+**Context.** Linear baselines run by the lab on the same recordings showed
+the position error concentrating at both ends of the corridor, and a marked
+improvement once the bins past the context exit were dropped before training.
+`exploration/08-position-error-analysis.py` reproduces the pattern on the
+thesis MLPs (single-output position studies of Batch 002, five test folds
+pooled, cm): median signed error **+13 cm** before the context, ≈ 0 inside
+it, **−22 cm** past the exit; the decoder saturates around the exit
+(predictions rarely exceed ~65 cm) while 21 % of the surviving test bins lie
+beyond it. Working hypothesis: after the context exit the animal is
+consuming the reward / licking / running past the end, and the neural
+activity there is not position-informative, so those bins pollute the fit
+everywhere.
+
+**Decision.** Add a bin-level filter to `ibioml.preprocess_data`,
+`get_idx_by_position_tail(pos_binned, trialFinalBin, thPositionEnd,
+bins_after)`: for each trial, find the first bin whose position exceeds
+`thPositionEnd` (raw encoder units) and mark every bin from
+`first_crossing − bins_after` to the trial's last bin (`trialFinalBin`) for
+removal. Union-merge into `indices_to_remove` before standardisation, so the
+position scaler only sees the retained range. Threshold for the pilot:
+`thPositionEnd = 515` (≈ 62.9 cm, the context exit — D-017 landmarks in
+`docs/trial-structure.md`). All other filters unchanged.
+
+**Alternatives.**
+
+- **Drop every bin with `pos > thPositionEnd`, ignoring trial structure.**
+  Practically identical — within-trial position is monotonic (≤ 1.5 % negative
+  diffs; at most a few dozen bins return below the threshold after crossing it
+  in the pilot datasets) — but the trial-epoch definition is the one that
+  states the hypothesis: once the animal has left the context, everything up
+  to the teleport is the post-context epoch regardless of encoder jitter.
+- **No padding.** Keeps ~3 % more data, but the last two surviving rows of
+  each trial would carry 200–400 ms of post-exit activity in their future
+  window (`bins_after = 2`), contradicting the hypothesis being tested and
+  the padding convention of every other bin filter. Can be revisited as a
+  refinement once the padded version is evaluated.
+- **Thesis-local mask on the processed pickles.** No library change, but `X`
+  already contains the history window (padding cannot be reconstructed) and
+  the target standardisation would still have seen the tail. Rejected.
+- **Also trim the corridor start.** The +13 cm bias there is real, but the
+  mechanism differs (ambiguous neural state right after the teleport, already
+  partially handled by the transition filter) and Phase 5 runs one change at
+  a time. Deferred.
+
+**Why.** Position, not duration or velocity, is the discriminator for the
+epoch we want to exclude; the per-trial rule maps 1:1 onto the behavioural
+event; padding keeps the sample-window invariant every other filter
+guarantees; and doing it inside `ibioml` follows D-012 / D-016 so the lab
+inherits the filter.
+
+**Cost.** 26–35 % of the post-preprocess bins in the pilot datasets
+(`Pir_N31` 18,711 → 13,835; `CA3_S18` 13,847 → 8,946; `DG_S17` 14,897 →
+10,550; measured with the implemented filter). Results must live in their
+own tree (`data/processed_posend515/`, `results_posend515/`) so the Batch
+001/002 baselines stay intact.
+
+**Known side effect.** The neuron filters (#7 low firing, #8 unstable) are
+computed on the *surviving* bins, so trimming the tail changes which neurons
+they flag: the variant keeps 1–2 more neurons than the baseline (`Pir_N31`
+22 vs 21, `CA3_S18` 17 vs 15, `DG_S17` 20 vs 19). This is inherent to the
+pipeline's order of operations (every bin filter has the same effect) and is
+accepted for the pilot; it is recorded here because a strict "one change"
+reading would freeze the neuron set. If the pilot result hinges on it, a
+follow-up can re-run the variant with the baseline's neuron mask.
+
+**Follow-up.** (1) Confirm with the director the exact cut used in the lab's
+baselines and align `thPositionEnd` if it differs. (2) Pilot on the three
+expert datasets, pos-only, evaluated per D-018. (3) Unit tests + upstream PR
+from the fork branch once the pilot validates the filter.
+
+---
+
+## D-018 — Report decoding error in physical units (RMSE, MAE); R² secondary; compare on equal support
+
+**Date:** 2026-08-26
+**Status:** accepted
+
+**Context.** Batches 001–002 and the SFN poster report test R² per outer
+fold. The director proposed reporting MSE instead. Facts checked in the
+library: the models minimise `nn.MSELoss` on the z-scored target
+(`ibioml/trainer.py`, scaler fit on each fold's train split); early stopping
+monitors validation MSE; Optuna maximises validation R², which for a fixed
+validation set is a monotone function of validation MSE — so the reporting
+metric does not affect training or model selection. Evaluating the *same*
+stored position predictions only on bins with true position ≤ 62.9 cm
+(`exploration/08-position-error-analysis.py`), the median across 17 datasets
+moves from MAE 16.0 → 14.5 cm but pooled R² 0.21 → 0.03: R² is the MSE
+normalised by the variance of the *evaluation set*, and the corridor tail
+carries much of that variance.
+
+**Decision.**
+
+1. **Primary metrics: RMSE and MAE in cm** (position) / cm/s (velocity), per
+   outer fold, computed from the de-standardised test predictions. RMSE is
+   the optimised loss in physical units; MAE is robust to the large tail
+   errors. Report both — a gap between them is itself informative.
+2. **R² stays as a secondary metric**, always reported, for continuity with
+   the poster and comparability with the decoding literature.
+3. **Chance reference**: the RMSE of predicting the training mean (the std of
+   the target) accompanies every RMSE, so the gain over chance is readable
+   in cm.
+4. **Equal-support rule**: models trained on different subsets of the data
+   (e.g. D-017 vs. baseline) are compared on the **same evaluation bins**.
+   A restricted-support metric is never set against a full-support one, in
+   any unit.
+5. **Retroactive**: all of the above is computed from `final_results.json`
+   (`analysis/results.py`, `analysis/metrics.py`); no batch is re-run.
+
+**Alternatives.**
+
+- **MSE as the headline number.** It is the loss, but cm² is not readable;
+  RMSE carries the same ordering in cm. Keep MSE as the training loss only.
+- **R² only.** Support-dependent (above) and opaque to the biological
+  reader.
+- **RMSE normalised by corridor length.** Adds nothing: every dataset shares
+  the same corridor, so cm are already comparable across animals and regions.
+
+**Why.** Shared rig geometry makes centimetres directly comparable across
+datasets, they match what the models optimise, and they state the result
+in the unit the scientific question is asked in. Keeping R² costs nothing
+and preserves comparability.

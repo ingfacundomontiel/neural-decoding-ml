@@ -273,6 +273,52 @@ positions the model can't generalize to.
 
 ---
 
+#### Item 6 — Position-tail filter: drop bins past the context exit — Priority 1 (active)
+
+Added 2026-08-26, agreed with the director after linear baselines run by the
+lab showed the position error concentrating at both ends of the corridor.
+Confirmed on the thesis MLPs by `exploration/08-position-error-analysis.py`
+(single-output position studies, five test folds pooled, cm): median signed
+error is **+13 cm** in the pre-context stretch, ≈ 0 inside the context, and
+**−22 cm** past the context exit; 21 % of the surviving test bins lie past
+the exit (62.9 cm). Hypothesis: neural activity after the context exit
+reflects reward consumption / licking rather than position, so training on
+those bins hurts the decoder everywhere.
+
+**The one change vs. the shared baseline:** a new bin-level filter in
+`ibioml.preprocess_data` that, per trial, removes every bin from the first
+crossing of `thPositionEnd` (raw encoder units; **provisional 515° ≈ 62.9 cm**,
+pending the director's confirmation of the value used in the lab's baselines)
+to the trial's last bin, padded by `bins_after` before the crossing so no
+surviving sample carries post-exit activity in its history window.
+Union-merged into `indices_to_remove` before standardisation. Every other
+filter (teleport transitions, immobility, dPrime, out-of-corridor, neuron
+filters) stays exactly as in the baseline. ADR: D-017.
+
+- **Pilot**: `Pir_N31_expert`, `CA3_S18_expert`, `DG_S17_expert` (best
+  position R² per region), **pos-only**. 3 runs ≈ 3–4 h GPU. Extend to all
+  17 pos-only only if the pilot holds up under the protocol below.
+- **Pickles**: `data/processed_posend515/`, via new `--th-position-end` /
+  `--out-dir` flags in `scripts/preprocess_all.py`.
+- **Results**: `results_posend515/`, via new `--data-dir` / `--results-dir`
+  flags in `scripts/run_all_experiments.py`.
+- **Evaluation protocol (D-018)**: RMSE and MAE in cm as primary metrics, R²
+  secondary. Baseline and filtered models are compared **on the same bins**
+  (true position ≤ 62.9 cm): the baseline restricted post hoc, the new batch
+  read with `RESULTS_DIR=results_posend515 python exploration/08-…py`. The
+  filtered model's R² is never compared to the baseline's full-support R².
+- **Data cost**: 26–35 % of the surviving bins per pilot dataset
+  (`CA3_S18` lands at 8,946 bins, below the current 9,020 minimum — relevant
+  to Item 3 if the two are ever combined). Side effect: the neuron filters
+  run on the surviving bins, so the variant keeps 1–2 more neurons than the
+  baseline (see D-017).
+- **Implementation**: fork branch off `feat/out-of-corridor-trial-filter`
+  (upstream PR #12 still open, and `preprocess_all.py` already depends on
+  `thPosition`), test-first (D-012), `docs/preprocessing.md` filter #9.
+- **Not in scope**: the corridor start. Its bias (+13 cm) has a different
+  mechanism (ambiguous neural state right after the teleport) and is already
+  handled by the trial-transition filter; one change at a time.
+
 ### Phase 5 cross-item conventions
 
 - **One change at a time.** Each item modifies exactly one factor vs. the
