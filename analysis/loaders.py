@@ -23,15 +23,17 @@ from scipy.io import loadmat
 # Wheel-encoder degrees → corridor centimetres. See module docstring.
 CM_PER_DEGREE = 0.1222
 
-# Virtual-corridor geometry, in cm, as reported by Facundo's collaborators
-# (verified against the lab's experimental setup, 2026-06-12).
-# Anything beyond CORRIDOR_END_CM is "drift" — either the rig extending the
-# corridor while the animal licks, or the animal continuing to run past the
-# expected end in unrewarded trials. See exploration/01-trial-structure.py.
-CONTEXT_START_CM = 42.0   # animal enters the rewarded/non-rewarded context
-CONTEXT_END_CM = 59.0     # exits the context
-REWARD_END_CM = 60.0      # end of the reward zone (1-2 cm wide, just after context)
-CORRIDOR_END_CM = 60.0    # the "natural" end of the virtual corridor; position > this is drift
+# Virtual-corridor geometry, in cm. Context entry/exit confirmed with the
+# director (2026-08-26; supersedes the 42 / 59 cm working estimates of
+# 2026-06-12). The reward zone starts where the context ends. The natural
+# end of the corridor is not documented by the lab; until it is, the context
+# exit is the last known landmark and everything beyond it is treated as
+# "post-context" — reward consumption, licking drift, or the animal running
+# past the end. See docs/trial-structure.md and exploration/01-trial-structure.py.
+CONTEXT_START_CM = 44.7   # animal enters the rewarded/non-rewarded context
+CONTEXT_END_CM = 62.9     # exits the context; reward zone begins here
+REWARD_START_CM = CONTEXT_END_CM
+CORRIDOR_END_CM = CONTEXT_END_CM  # working assumption — see note above
 
 # Variables we expect in every well-formed recording `.mat`.
 EXPECTED_VARS = (

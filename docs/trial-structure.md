@@ -35,21 +35,25 @@ keep code and docs in sync.
 | Landmark | Position (cm) | Notes |
 |---|---|---|
 | Trial start | 0 | Animal teleports here at the start of each trial. |
-| Context entry | ~42 | Rewarded or non-rewarded context begins (visual cue). |
-| Context exit | ~59 | Animal exits the context. |
-| Reward zone | ~59 → 60 | 1–2 cm wide; water delivered if `rewCtxt = 1 AND rewOdor = 1`. |
-| Natural corridor end | ~60–65 | Nominal end of the virtual corridor visible to the animal. |
+| Context entry | 44.7 | Rewarded or non-rewarded context begins (visual cue). Confirmed 2026-08-26. |
+| Context exit | 62.9 | Animal exits the context. Confirmed 2026-08-26. |
+| Reward zone | starts at 62.9 | Begins at the context exit; width not documented. Water delivered if `rewCtxt = 1 AND rewOdor = 1`. |
+| Natural corridor end | not documented | Until the lab confirms it, the context exit is the last known landmark; everything past it is treated as post-context (reward zone / licking drift / running past the end). |
+
+> **History.** The 2026-06-12 working estimates were 42 / 59 / 60 cm. They were
+> replaced on 2026-08-26 by the values above (context entry / exit confirmed
+> with the director). In raw encoder units: entry ≈ 366°, exit ≈ 515°.
 
 ## Trial flow
 
 1. Animal teleports to position 0 at the start of the trial.
 2. Animal runs forward; the wheel encoder increments `position`.
-3. Around ~42 cm, the rewarded / non-rewarded context begins.
+3. At 44.7 cm, the rewarded / non-rewarded context begins.
 4. The odor is delivered during the context window. The variables
    `rewCtxt` and `rewOdor` in the `.mat` are **time-varying flags** that
    fire only while the stimulus is active — they are not constant across
    the whole trial.
-5. Around ~59–60 cm, the animal reaches the reward zone. If
+5. At 62.9 cm the animal exits the context and reaches the reward zone. If
    `rewCtxt = 1 AND rewOdor = 1`, water is delivered.
 6. The animal either continues running (no reward, or quickly past the
    reward zone) or stops to lick the water.
@@ -165,10 +169,11 @@ untouched by this filter.
 The landmarks above are exported as module-level constants in
 `analysis/loaders.py`, alongside `CM_PER_DEGREE`:
 
-- `CONTEXT_START_CM = 42.0`
-- `CONTEXT_END_CM = 59.0`
-- `REWARD_END_CM = 60.0`
-- `CORRIDOR_END_CM = 60.0`
+- `CONTEXT_START_CM = 44.7`
+- `CONTEXT_END_CM = 62.9`
+- `REWARD_START_CM = CONTEXT_END_CM`
+- `CORRIDOR_END_CM = CONTEXT_END_CM` — working assumption while the natural
+  corridor end is undocumented (see the layout table above).
 
 `analysis/loaders.py` is the single source of truth for these values. If
 any landmark is later corrected against the lab's official rig spec,
@@ -177,8 +182,9 @@ document with the new value and date.
 
 ## Open questions to confirm with the director
 
-- Exact natural corridor length (currently estimated 60–65 cm).
-- Exact width of the reward zone (currently 1–2 cm).
+- Exact natural corridor length (not documented; `CORRIDOR_END_CM` currently
+  falls back to the context exit).
+- Exact width of the reward zone.
 - Whether the `rewCtxt` / `rewOdor` flags overlap exactly with the visible
   context window, or have lead/lag relative to it.
 

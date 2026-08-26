@@ -25,6 +25,13 @@ from pathlib import Path
 import pickle
 import glob
 from matplotlib.patches import Patch
+import sys
+
+# Repo root on sys.path so `analysis.*` imports work whether this runs as a
+# script (from the repo root) or as a Jupytext notebook.
+ROOT = Path(__file__).resolve().parent.parent if "__file__" in dir() else Path.cwd().parent
+sys.path.insert(0, str(ROOT))
+from analysis.loaders import CM_PER_DEGREE  # noqa: E402
 
 print("=" * 100)
 print("VISUALIZACIÓN DE PREDICCIONES vs DATOS REALES")
@@ -359,10 +366,10 @@ def plot_predictions_comparison(predictions, true_values, fold_to_plot, testTria
     time_bins = np.arange(len(y_true))
     time_seconds = time_bins * (bin_duration_ms / 1000.0)  # Convertir ms a segundos
     
-    # Convertir posición de mm a cm (solo para target='position')
+    # Position is stored in wheel-encoder degrees → cm (analysis.loaders.CM_PER_DEGREE)
     if target == 'position':
-        y_true = y_true / 10.0  # Convertir mm a cm
-        y_pred = y_pred / 10.0  # Convertir mm a cm
+        y_true = y_true * CM_PER_DEGREE
+        y_pred = y_pred * CM_PER_DEGREE
     
     # Colores específicos por target
     colors = {
@@ -545,9 +552,9 @@ def create_subplot_predictions(predictions, true_values, fold_to_plot, dataset_n
         time_bins_pos = np.arange(len(y_true_pos))
         time_seconds_pos = time_bins_pos * (bin_duration_ms / 1000.0)
         
-        # Convertir posición de mm a cm
-        y_true_pos = y_true_pos / 10.0  # Convertir mm a cm
-        y_pred_pos = y_pred_pos / 10.0  # Convertir mm a cm
+        # Position is stored in wheel-encoder degrees → cm (analysis.loaders.CM_PER_DEGREE)
+        y_true_pos = y_true_pos * CM_PER_DEGREE
+        y_pred_pos = y_pred_pos * CM_PER_DEGREE
         
         ax1.plot(time_seconds_pos, y_true_pos, label='Real Data', color='black', linewidth=2)
         ax1.plot(time_seconds_pos, y_pred_pos, label='Predictions', color='#63adf2', linewidth=2)

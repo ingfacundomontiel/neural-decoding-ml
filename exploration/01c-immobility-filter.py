@@ -39,7 +39,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent if "__file__" in dir() else Path.cwd().parent
 sys.path.insert(0, str(ROOT))
 
-from analysis.loaders import CM_PER_DEGREE, load_mat, position_in_cm  # noqa: E402
+from analysis.loaders import CM_PER_DEGREE, CORRIDOR_END_CM, load_mat, position_in_cm  # noqa: E402
 from ibioml.preprocess_data import periods_immobility  # noqa: E402
 
 DATA_PATH = Path(os.environ.get(
@@ -56,7 +56,7 @@ THDUR = 4          # seconds (Sebas)
 BINS_BEFORE = 5
 BINS_AFTER = 5
 
-CORRIDOR_END_CM_DECLARED = 60.0  # for visual reference only
+CORRIDOR_END_CM_DECLARED = CORRIDOR_END_CM  # for visual reference only (single source: analysis.loaders)
 
 # %% [markdown]
 # ## 1. Load + per-trial aggregates (same recipe as 01)
