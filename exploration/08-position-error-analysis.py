@@ -39,12 +39,14 @@
 # 3. **Support** — how many test bins fall in each 2 cm bin (sparse positions →
 #    noisy estimates).
 #
-# The context zone (44.7 → 62.9 cm) is shaded on every panel.
+# The context zone (44.7 → 62.9 cm) is outlined on the identity panel (edges only,
+# so the density colours stay readable) and shaded on the two line panels.
 #
 # Emits under `results/plots/single/error-by-position/`:
 #
 # - `<dataset>_error_by_position.svg` — one per position study.
 # - `hero_experts_error_by_position.svg` — 3 columns: Pir N31, CA3 S18, DG S17.
+# - `hero_piriform_experts_error_by_position.svg` — 3 columns: Pir N31, L3, L5.
 # - `summary_table.csv` / `.md` — full-support vs. ≤ context-exit metrics, per-zone MAE.
 # - `per_fold_metrics.csv` — RMSE / MAE / R² per outer fold, full and ≤ context-exit.
 #
@@ -64,6 +66,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.colors import LinearSegmentedColormap, to_rgb
+from matplotlib.lines import Line2D
 
 ROOT = Path(__file__).resolve().parent.parent if "__file__" in dir() else Path.cwd().parent
 sys.path.insert(0, str(ROOT))
@@ -92,6 +95,7 @@ PLOT_DIR.mkdir(parents=True, exist_ok=True)
 
 TARGET = "pos"
 HERO = ["Pir-Expert-N31", "CA3-Expert-S18", "DG-Expert-S17"]
+HERO_PIRIFORM = ["Pir-Expert-N31", "Pir-Expert-L3", "Pir-Expert-L5"]
 
 BIN_CM = 2.0        # width of the true-position bins for the error curve
 MIN_COUNT = 30      # bins with fewer test samples get no error estimate
@@ -182,6 +186,22 @@ def shade_context(ax, axis="x", label=None):
     line(CONTEXT_END_CM, color="0.35", linewidth=0.8, linestyle=":")
 
 
+# Fine dots so the context edges read differently from the dashed identity line.
+CONTEXT_EDGE = dict(color="0.35", linewidth=1.0, linestyle=(0, (1.2, 2.2)))
+
+
+def outline_context(ax):
+    """Context-zone edges on both axes (no fill — keeps the hexbin colours readable)."""
+    for v in (CONTEXT_START_CM, CONTEXT_END_CM):
+        ax.axvline(v, **CONTEXT_EDGE)
+        ax.axhline(v, **CONTEXT_EDGE)
+
+
+def context_handle():
+    return Line2D([], [], label=f"context zone ({CONTEXT_START_CM:g}–{CONTEXT_END_CM:g} cm)",
+                  **CONTEXT_EDGE)
+
+
 def style_axes(ax):
     ax.grid(True, **GRID)
     ax.set_axisbelow(True)
@@ -194,11 +214,11 @@ def plot_identity(ax, y_true, y_pred, color, hi):
     """Hexbin density of true vs predicted position with the identity line."""
     lo = AXIS_LO_CM
     inside = (y_pred >= lo) & (y_pred <= hi)
+    # Density hexbin, log colour scale (light = few bins, dark = many); no colorbar.
     ax.hexbin(y_true, y_pred, gridsize=55, extent=(lo, hi, lo, hi), bins='log',
               cmap=single_hue_cmap(color), mincnt=1, linewidths=0.1, edgecolors='face')
     ax.plot([lo, hi], [lo, hi], color="0.25", linewidth=1.0, linestyle="--", label="identity")
-    shade_context(ax, "x", label="context zone")
-    shade_context(ax, "y")
+    outline_context(ax)
     ax.set_xlim(lo, hi)
     ax.set_ylim(lo, hi)
     ax.set_aspect('equal', adjustable='box')
@@ -232,6 +252,8 @@ def annotate_zone_shares(ax, zones, hi):
         "post_context": 0.5 * (CONTEXT_END_CM + hi),
     }
     for _, row in zones.iterrows():
+        if row["pct_bins"] < 0.5:  # empty zone (e.g. post-context in the tail-filtered variant)
+            continue
         ax.text(centres[row["zone"]], 0.97,
                 f"{row['pct_bins']:.0f}% of bins\n{row['pct_sq_error']:.0f}% of sq. error",
                 transform=ax.get_xaxis_transform(), ha="center", va="top",
@@ -280,9 +302,12 @@ def figure_for_dataset(name, d):
     fig, axes = plt.subplots(3, 1, figsize=(6.4, 12), dpi=200,
                              gridspec_kw={"height_ratios": [3, 1.6, 0.9]}, sharex=False)
     table = draw_column(axes, name, d)
-    axes[0].legend(loc="lower right", fontsize=8, frameon=False)
+    handles, _ = axes[0].get_legend_handles_labels()
+    axes[0].legend(handles=handles + [context_handle()], loc="lower right", fontsize=8,
+                   frameon=False)
     axes[1].legend(loc="lower left", fontsize=8, frameon=False)
-    fig.suptitle("Position decoding error along the corridor — single-output MLP",
+    fig.suptitle("Position decoding error along the corridor — single-output MLP · "
+                 "test predictions, 5 outer folds pooled",
                  fontsize=11, color=INK, x=0.02, ha="left", y=0.995)
     fig.tight_layout()
     out = PLOT_DIR / f"{name}_error_by_position.svg"
@@ -292,7 +317,7 @@ def figure_for_dataset(name, d):
     return table
 
 
-def hero_figure(names):
+def hero_figure(names, out_name, subtitle):
     present = [n for n in names if n in studies]
     if not present:
         print("❌ none of the hero datasets found — skipping hero figure")
@@ -305,12 +330,15 @@ def hero_figure(names):
         if col > 0:
             for ax in axes[:, col]:
                 ax.set_ylabel("")
-    axes[0, 0].legend(loc="lower right", fontsize=8, frameon=False)
+    handles, _ = axes[0, 0].get_legend_handles_labels()
+    axes[0, 0].legend(handles=handles + [context_handle()], loc="lower right", fontsize=8,
+                      frameon=False)
     axes[1, 0].legend(loc="lower left", fontsize=8, frameon=False)
-    fig.suptitle("Position decoding error along the corridor — expert animals, single-output MLP",
+    fig.suptitle(f"Position decoding error along the corridor — {subtitle}, single-output MLP · "
+                 "test predictions, 5 outer folds pooled",
                  fontsize=12, color=INK, x=0.02, ha="left", y=0.995)
     fig.tight_layout()
-    out = PLOT_DIR / "hero_experts_error_by_position.svg"
+    out = PLOT_DIR / out_name
     fig.savefig(out, format="svg", bbox_inches="tight")
     plt.close(fig)
     print(f"📁 {out.relative_to(ROOT) if out.is_relative_to(ROOT) else out}")
@@ -322,7 +350,8 @@ def hero_figure(names):
 binned_tables = {}
 for name in [d for d in FIXED_ORDER if d in studies]:
     binned_tables[name] = figure_for_dataset(name, studies[name])
-hero_figure(HERO)
+hero_figure(HERO, "hero_experts_error_by_position.svg", "expert animals")
+hero_figure(HERO_PIRIFORM, "hero_piriform_experts_error_by_position.svg", "piriform expert animals")
 
 
 # %%

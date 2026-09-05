@@ -12,6 +12,117 @@ Sorted newest-first.
 
 ---
 
+## Batch 004 — Item 6 pilot extension: position-tail filter, MLP pos-only (Pir_L3, Pir_L5)
+
+- **Date launched**: 2026-08-27 10:55 (GPU local time; batch log
+  `results_posend515/logs/batch_posend515_20260827_1055.log`). Launched over
+  SSH from the laptop.
+- **Date completed**: 2026-08-27 12:14 (`mlp_Pir_L5_expert_bins200ms_pos`, started
+  11:33, 2395 s).
+- **Wall-time observed**: 78.7 min (39 min L3, 40 min L5).
+- **Thesis commit at launch**: `eeb00c8` (unchanged from Batch 003; the host tree
+  was clean).
+- **`ibioml` submodule pin at launch**: `28c8cc5` (unchanged from Batch 003).
+- **Preprocess config used**: identical to Batch 003 — the variant pickles under
+  `data/processed_posend515/` were generated for all 17 datasets on 2026-08-26,
+  so nothing was re-preprocessed. Surviving bins: Pir_L3 6,411 (vs 9,715
+  baseline, −34 %), Pir_L5 7,139 (vs 9,759, −27 %). Neurons kept are the same
+  as the baseline for both (L3 18 / 18, L5 52 / 52) — no neuron-filter side
+  effect here.
+- **Pickles consumed**: `_withCtxt_onlyPosition_flat.pickle` from the variant tree.
+- **Training config**: identical to Batch 002 / 003.
+- **Datasets**: `Pir_L3_expert`, `Pir_L5_expert` — completes the piriform-expert
+  trio (with N31 from Batch 003) so the within-region consistency of the
+  position-tail effect can be checked against the three baselines shown in
+  `hero_piriform_experts_error_by_position.svg`.
+- **Command**:
+  ```bash
+  nohup uv run python scripts/run_all_experiments.py --targets pos \
+      --only Pir_L3,Pir_L5 \
+      --data-dir data/processed_posend515 --results-dir results_posend515 \
+      > results_posend515/logs/batch_posend515_$(date +%Y%m%d_%H%M).log 2>&1 &
+  ```
+- **Volume**: 2 experiments.
+- **Results dirs**: `results_posend515/mlp_Pir_L3_expert_bins200ms_pos/`,
+  `results_posend515/mlp_Pir_L5_expert_bins200ms_pos/`.
+- **Evaluation protocol**: as Batch 003 (D-018); `09-comparison-position-tail.py`
+  picks up every dataset present in both trees, so the comparison table grows
+  to 5 datasets once these are synced.
+- **Headline finding** (equal support, true ≤ 62.9 cm, paired folds): same
+  direction as Batch 003, larger — the variant wins **5/5 folds** on both:
+  Pir_L3 Δ RMSE **−5.6 cm**, Δ MAE **−3.9 cm** (12.4 → 8.5), Δ R² +0.37;
+  Pir_L5 Δ RMSE **−5.4 cm**, Δ MAE **−2.7 cm** (13.0 → 9.8), Δ R² +0.40.
+  Across the five pilots the median is Δ RMSE −4.0 cm, Δ MAE −2.5 cm, Δ R²
+  +0.30, every dataset 5/5. Same fine print as Batch 003: the gain sits in the
+  first 30 cm (Δ MAE −7.3 cm at 0–10, −3.8 at 10–30), it is neutral at 30–45 cm
+  and negative inside the context (+1.9 / +6.4 cm; bias −8 → −17 at 55–63 cm) —
+  the training-range edge effect moved to the context exit in all five.
+
+## Batch 003 — Item 6 pilot: position-tail filter, MLP pos-only (3 expert datasets)
+
+- **Date launched**: 2026-08-26 17:07 (GPU local time; batch log
+  `results_posend515/logs/batch_posend515_20260826_1707.log`).
+- **Date completed**: 2026-08-26 ~20:08 (last experiment
+  `mlp_Pir_N31_expert_bins200ms_pos`, started 18:51, 4597 s).
+- **Wall-time observed**: 181 min (47 / 57 / 77 min for CA3_S18 / DG_S17 /
+  Pir_N31 — proportional to the number of surviving bins).
+- **Thesis commit at launch**: `eeb00c8` (`docs: Phase 5 Item 6 (position-tail
+  filter) + ADRs D-017 and D-018`).
+- **`ibioml` submodule pin at launch**: `28c8cc5` (fork branch
+  `feat/position-tail-filter`, on top of `2dfdc68` / PR #12 — adds
+  `get_idx_by_position_tail` and the `thPositionEnd` option).
+- **Preprocess config used**: Batch 001/002 baseline (`bins_before=2 /
+  bins_current=1 / bins_after=2`, `firingMinimo=0.1 Hz`, `thPosition=1500`,
+  `threshDPrime=2 expert / -1.1 naive`) **plus `thPositionEnd=515`** (≈ 62.9 cm,
+  the context exit — provisional, pending the director's confirmation of the
+  cut used in the lab's linear baselines; D-017). Pickles regenerated for all
+  17 datasets into `data/processed_posend515/` (`scripts/preprocess_all.py
+  --th-position-end 515 --out-dir data/processed_posend515`); the baseline
+  pickles under `data/processed/` were not touched. Surviving bins for the
+  pilots: CA3_S18 8,946 (−35 % vs baseline), DG_S17 10,550 (−29 %),
+  Pir_N31 13,835 (−26 %). Side effect recorded in D-017: the neuron filters
+  run on the surviving bins, so the variant keeps 15 / 18 / 20 neurons vs
+  13 / 17 / 19 in the baseline.
+- **Pickles consumed**: `_withCtxt_onlyPosition_flat.pickle` from the variant tree.
+- **Training config**: identical to Batch 002 single-output (MLP,
+  `output_size=1`, hidden_size 128–512 step 64, num_layers 1–3, dropout 0–0.5,
+  lr log 1e-8→1e-3, batch 32, es_patience 20, num_epochs 200, Optuna 20
+  trials, 5 outer folds × 1 inner hold-out).
+- **Datasets**: `Pir_N31_expert`, `CA3_S18_expert`, `DG_S17_expert` — the best
+  position R² per region in Batch 002 (pilot; extension to all 17 depends on
+  the outcome).
+- **Command**:
+  ```bash
+  nohup uv run python scripts/run_all_experiments.py --targets pos \
+      --only Pir_N31,CA3_S18,DG_S17 \
+      --data-dir data/processed_posend515 --results-dir results_posend515 \
+      > results_posend515/logs/batch_posend515_$(date +%Y%m%d_%H%M).log 2>&1 &
+  ```
+- **Volume**: 3 experiments. Passed 3, failed 0.
+- **Results dirs**: `results_posend515/mlp_<dataset>_bins200ms_pos/` (3 dirs),
+  synced back to the laptop with `rsync` on 2026-08-26.
+- **Evaluation protocol (D-018)**: never compared to the baseline's
+  full-support numbers. `exploration/09-comparison-position-tail.py` evaluates
+  baseline and variant on the same bins (true position ≤ 62.9 cm) with paired
+  folds; `RESULTS_DIR=results_posend515 exploration/08-position-error-analysis.py`
+  gives the variant's own error-by-position figures. Outputs under
+  `results_posend515/plots/`.
+- **Headline finding** (equal support, true ≤ 62.9 cm, paired folds): the
+  variant wins in **5/5 folds on all three datasets** — median Δ RMSE **−3.8 cm**
+  (−4.0 / −3.5 / −3.8), Δ MAE **−2.4 cm** (−2.4 / −1.6 / −2.5), Δ R² **+0.26**
+  (+0.26 / +0.30 / +0.23) for CA3_S18 / DG_S17 / Pir_N31. Baseline on the same
+  bins: MAE 12.3 / 13.3 / 11.6 cm → variant 9.9 / 11.7 / 9.1 cm.
+  **Fine print (zone_comparison.md)**: the gain is entirely in the first 30 cm
+  (Δ MAE −7 cm at 0–10 cm, −4 cm at 10–30 cm; start bias +17 → +10 cm), roughly
+  neutral at 30–45 cm, and **negative inside the context zone** (Δ MAE +2 cm at
+  45–55 cm, +6 cm at 55–63 cm; bias −8 → −17 cm). The edge effect did not
+  disappear — it moved from the corridor end to the new end of the training
+  range (the context exit), consistent with shrinkage toward the (now lower)
+  mean position rather than with removal of "contaminating" activity alone.
+  Candidate follow-up: a buffer cut (e.g. `thPositionEnd` ≈ 650° ≈ 80 cm) that
+  keeps the context zone away from the training edge while still dropping the
+  far tail; evaluate on ≤ 62.9 cm as here.
+
 ## Batch 002 — Item 1: MLP single-output (pos & vel)
 
 - **Date launched**: 2026-07-23 (evening, GPU local time — first experiment
