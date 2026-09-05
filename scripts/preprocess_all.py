@@ -13,6 +13,9 @@ Usage:
     # Variant: also drop the post-context tail of every trial (Phase 5 Item 6, D-017),
     # written to its own tree so the baseline pickles stay intact:
     python scripts/preprocess_all.py --th-position-end 515 --out-dir data/processed_posend515
+    # Variant: Gaussian-smoothed spike counts replacing the history window (Item 7):
+    python scripts/preprocess_all.py --gaussian-sigma-ms 200 --bins-before 0 --bins-after 0 \
+        --out-dir data/processed_smooth200_w010
 
 Outputs (all under `data/processed/`, or `--out-dir`):
 - `<region>/<dataset>_*.pickle` — the 12 pickle variants preprocess_data emits.
@@ -73,6 +76,21 @@ def parse_args() -> argparse.Namespace:
         help="Drop, per trial, every bin from the first position above this threshold "
              "(encoder degrees) to the trial end, padded by bins_after (D-017). "
              "Default: disabled (baseline pipeline).",
+    )
+    p.add_argument(
+        "--gaussian-sigma-ms", type=float, default=None, metavar="MS",
+        help="Smooth each neuron's spike counts with a temporal Gaussian of this sigma "
+             "(ms) before building the history window (Item 7, plan.md). "
+             "Default: disabled (baseline pipeline).",
+    )
+    p.add_argument(
+        "--bins-before", type=int, default=None, metavar="N",
+        help=f"History bins before the current one. Default: {DEFAULT_CONFIG['bins_before']}. "
+             "Also used as row-filter padding, so changing it changes the surviving bins.",
+    )
+    p.add_argument(
+        "--bins-after", type=int, default=None, metavar="N",
+        help=f"History bins after the current one. Default: {DEFAULT_CONFIG['bins_after']}.",
     )
     p.add_argument(
         "--out-dir", type=Path, default=DATA_OUT,
@@ -155,6 +173,7 @@ def process_one(region: str, name: str, mat_path: Path, force: bool,
                 thDur=config["thDur"],
                 thPosition=config["thPosition"],
                 thPositionEnd=config["thPositionEnd"],
+                gaussianSigmaMs=config["gaussianSigmaMs"],
                 data_dir=str(region_out),
             )
     finally:
@@ -286,7 +305,13 @@ def main() -> int:
         return 1
 
     out_dir = args.out_dir.resolve()
-    config = {**DEFAULT_CONFIG, "thPositionEnd": args.th_position_end}
+    config = {**DEFAULT_CONFIG,
+              "thPositionEnd": args.th_position_end,
+              "gaussianSigmaMs": args.gaussian_sigma_ms}
+    if args.bins_before is not None:
+        config["bins_before"] = args.bins_before
+    if args.bins_after is not None:
+        config["bins_after"] = args.bins_after
 
     print(f"Processing {len(datasets)} dataset(s)")
     print(f"Config: {config}")

@@ -363,9 +363,14 @@ Pilot on **one dataset** (`Pir_N31_expert`, best position R²), pos-only, full
   `get_spikes_with_history` (fork branch, test-first per D-012);
   `--gaussian-sigma-ms`, `--bins-before`, `--bins-after` flags in
   `scripts/preprocess_all.py`. Each run gets its own pickle/results tree.
-- **Comparability**: smoothing removes no bins, so all four runs share the
-  baseline's test support and fold partition — direct comparison, no D-018
-  restriction needed.
+- **Comparability** (measured on the smoke run, 2026-09-05): smoothing removes
+  no bins, but the window size does — `bins_before/after` double as row-filter
+  padding, so the 0/1/0 runs keep **20,527** bins on N31 vs the baseline's
+  **18,711** (same 19 neurons everywhere). Comparison plan: **A vs B** direct
+  (identical rows, verified) and **C vs baseline** direct (identical rows,
+  verified); across window sizes, restrict to the common bins — the 2/1/2
+  kept set is a strict subset of the 0/1/0 one, reconstructable
+  deterministically from the filters.
 - **Known limitation**: the Gaussian blurs activity across the boundaries of
   removed bins (teleports, immobility stretches); with σ = 1 bin the leak dies
   within ~2 bins and transitions are already padded. Recorded, accepted for
