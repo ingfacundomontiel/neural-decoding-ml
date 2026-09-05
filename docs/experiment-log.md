@@ -12,6 +12,56 @@ Sorted newest-first.
 
 ---
 
+## Batch 005 — Item 7 pilot: Gaussian-smoothed spike counts vs history window (Pir_N31, 2×2)
+
+- **Date launched**: 2026-09-05 13:02 (GPU local time; wrapper log
+  `results_smooth200_w010/logs/batch005_20260905_1302.log`, runs the three
+  configs sequentially and prints `ALL_DONE_BATCH005`).
+- **Date completed**: 2026-09-05 18:13 (A 6458 s, B 5887 s, C 6264 s — ~5.2 h total).
+- **Thesis commit at launch**: `6c108d9` (`feat(pipeline): gaussian-smoothing
+  and window flags in preprocess_all; bump ibioml pin`).
+- **`ibioml` submodule pin at launch**: `a3adf40` (fork branch
+  `feat/gaussian-smoothing`, on top of `28c8cc5` — adds `smooth_neural_data`
+  and the `gaussianSigmaMs` option; 20/20 tests, off-path verified
+  byte-identical to the baseline pipeline).
+- **Design** (plan.md Item 7, agreed 2026-09-05): complete the 2×2
+  {raw, smoothed σ=200 ms} × {window 2/1/2, window 0/1/0} on one dataset;
+  the existing Batch 002 study is the raw + 2/1/2 anchor.
+
+  | run | tree | activity | window | bins kept | neurons |
+  |---|---|---|---|---:|---:|
+  | A | `*_smooth200_w010` | smoothed σ=200 ms | 0/1/0 | 20,527 | 19 |
+  | B | `*_raw_w010` | raw | 0/1/0 | 20,527 | 19 |
+  | C | `*_smooth200_w212` | smoothed σ=200 ms | 2/1/2 | 18,711 | 19 |
+
+  A and B keep identical rows; C keeps exactly the baseline's rows (both
+  verified on the preprocess smoke). Cross-window comparisons must restrict
+  to the common bins (the 2/1/2 kept set is a strict subset of the 0/1/0 one).
+- **Preprocess config used**: baseline (`firingMinimo=0.1`, `thPosition=1500`,
+  `threshDPrime=2/-1.1`, no position-tail filter) plus the per-run
+  `--gaussian-sigma-ms` / `--bins-before` / `--bins-after` above; pickles for
+  `Pir_N31` only, one tree per run (`data/processed_<tree>/`).
+- **Pickles consumed**: `_withCtxt_onlyPosition_flat.pickle` per tree.
+- **Training config**: identical to Batches 002–004 (MLP pos-only, Optuna 20
+  trials, 5 outer folds × 1 inner hold-out).
+- **Datasets**: `Pir_N31_expert` only (pilot on one piriform, per the
+  director's suggestion).
+- **Command**: wrapper `results_smooth200_w010/logs/batch005.sh` — three
+  sequential `run_all_experiments.py --targets pos --only Pir_N31
+  --data-dir data/processed_<tree> --results-dir results_<tree>` calls.
+- **Volume**: 3 experiments.
+- **Results dirs**: `results_smooth200_w010/`, `results_raw_w010/`,
+  `results_smooth200_w212/`, each with `mlp_Pir_N31_expert_bins200ms_pos/`.
+- **Headline finding** (per-fold medians on the common support — the 2/1/2 kept
+  bins — via `exploration/12-comparison-smoothing.py`): **smoothing always helps,
+  but does not fully replace the window.** R²: baseline 0.484 · C (smooth+window)
+  **0.516** · A (smooth, 1 bin) 0.429 · B (raw, 1 bin) 0.278. Paired contrasts,
+  all 5/5 or 0/5 folds: smoothing adds +0.031 R² (−1.1 cm MAE) on top of the
+  window and +0.149 (−2.9 cm) without it; dropping the window costs −0.203 raw
+  but only −0.081 smoothed; the proposal (A) vs the anchor loses −0.054 R²
+  (+1.2 cm MAE). Best of the four: **C** — smoothing σ=200 ms on top of the
+  standard window, a free +0.03 R² / −1.1 cm on this dataset.
+
 ## Batch 004 — Item 6 pilot extension: position-tail filter, MLP pos-only (Pir_L3, Pir_L5)
 
 - **Date launched**: 2026-08-27 10:55 (GPU local time; batch log
