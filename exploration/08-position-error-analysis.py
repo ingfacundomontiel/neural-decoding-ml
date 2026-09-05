@@ -28,10 +28,13 @@
 #
 # Per dataset, one figure with three rows sharing the x axis (true position, cm):
 #
-# 1. **Identity plot** — true (x) vs predicted (y) as a density hexbin with the
-#    identity line. Perfect decoding sits on the diagonal.
+# 1. **Conditional heatmap** — true (x) vs predicted (y). Each 2 cm column is the
+#    distribution of the predictions for that true position, **normalised by the
+#    column's own sample count** (P(predicted | true)), so densely and sparsely
+#    visited positions read on the same scale. Columns with fewer than 30 test
+#    bins are blanked. Perfect decoding sits on the identity line.
 # 2. **Error vs true position** — median of (pred − true) per 2 cm bin with the
-#    IQR band (positive = over-prediction), plus the MAE per bin (grey), which
+#    IQR band (positive = over-prediction), plus MAE and RMSE per bin (grey), which
 #    shows where the error *concentrates* regardless of sign. Each zone is
 #    annotated with its share of the test bins and its share of the total
 #    squared error: a zone whose error share exceeds its bin share concentrates
@@ -211,12 +214,25 @@ def style_axes(ax):
 
 
 def plot_identity(ax, y_true, y_pred, color, hi):
-    """Hexbin density of true vs predicted position with the identity line."""
+    """Column-normalised heatmap of predicted vs true position (identity panel).
+
+    Each true-position column is divided by its own sample count, so the colour
+    shows P(predicted | true) rather than joint density — the support histogram
+    (bottom row) carries the sample counts the normalisation removes here.
+    """
     lo = AXIS_LO_CM
     inside = (y_pred >= lo) & (y_pred <= hi)
-    # Density hexbin, log colour scale (light = few bins, dark = many); no colorbar.
-    ax.hexbin(y_true, y_pred, gridsize=55, extent=(lo, hi, lo, hi), bins='log',
-              cmap=single_hue_cmap(color), mincnt=1, linewidths=0.1, edgecolors='face')
+    x_edges = np.arange(0.0, hi + BIN_CM, BIN_CM)   # true positions are >= 0
+    y_edges = np.arange(lo, hi + BIN_CM, BIN_CM)
+    counts, _, _ = np.histogram2d(y_true, y_pred, bins=[x_edges, y_edges])
+    col_total = np.histogram(y_true, bins=x_edges)[0].astype(float)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        cond = counts / col_total[:, None]
+    cond[col_total < MIN_COUNT, :] = np.nan  # no distribution from a handful of bins
+    cond[cond == 0] = np.nan                 # empty cells stay background-white
+    vmax = float(np.nanpercentile(cond, 99)) if np.isfinite(cond).any() else None
+    ax.pcolormesh(x_edges, y_edges, cond.T, cmap=single_hue_cmap(color),
+                  vmin=0.0, vmax=vmax, shading="flat")
     ax.plot([lo, hi], [lo, hi], color="0.25", linewidth=1.0, linestyle="--", label="identity")
     outline_context(ax)
     ax.set_xlim(lo, hi)
@@ -236,6 +252,8 @@ def plot_binned_error(ax, table, color, zones=None, hi=None):
     ax.plot(table["center"], table["median_signed"], color=color, linewidth=1.8,
             label="median (pred − true)")
     ax.plot(table["center"], table["mae"], color="0.3", linewidth=1.3, label="MAE")
+    ax.plot(table["center"], table["rmse"], color="0.3", linewidth=1.1,
+            linestyle=(0, (4, 2)), label="RMSE")
     ax.axhline(0, color="0.25", linewidth=0.9)
     shade_context(ax, "x")
     if zones is not None:
@@ -307,7 +325,7 @@ def figure_for_dataset(name, d):
                    frameon=False)
     axes[1].legend(loc="lower left", fontsize=8, frameon=False)
     fig.suptitle("Position decoding error along the corridor — single-output MLP · "
-                 "test predictions, 5 outer folds pooled",
+                 "test predictions, 5 outer folds pooled · top: P(predicted | true)",
                  fontsize=11, color=INK, x=0.02, ha="left", y=0.995)
     fig.tight_layout()
     out = PLOT_DIR / f"{name}_error_by_position.svg"
@@ -335,7 +353,7 @@ def hero_figure(names, out_name, subtitle):
                       frameon=False)
     axes[1, 0].legend(loc="lower left", fontsize=8, frameon=False)
     fig.suptitle(f"Position decoding error along the corridor — {subtitle}, single-output MLP · "
-                 "test predictions, 5 outer folds pooled",
+                 "test predictions, 5 outer folds pooled · top: P(predicted | true)",
                  fontsize=12, color=INK, x=0.02, ha="left", y=0.995)
     fig.tight_layout()
     out = PLOT_DIR / out_name

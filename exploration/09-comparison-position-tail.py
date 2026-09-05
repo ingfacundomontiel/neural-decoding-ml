@@ -299,6 +299,8 @@ def overlay_column(axes, name):
     for model, tbl in curves.items():
         c = MODEL_COLOR[model]
         axes[0].plot(tbl["center"], tbl["mae"], color=c, linewidth=1.8, label=MODEL_LABEL[model])
+        axes[0].plot(tbl["center"], tbl["rmse"], color=c, linewidth=1.2,
+                     linestyle=(0, (4, 2)), label=f"RMSE — {MODEL_LABEL[model]}")
         axes[1].fill_between(tbl["center"], tbl["q25"], tbl["q75"], color=c, alpha=0.18, lw=0)
         axes[1].plot(tbl["center"], tbl["median_signed"], color=c, linewidth=1.8)
     axes[1].axhline(0, color="0.25", linewidth=0.9)
@@ -308,7 +310,7 @@ def overlay_column(axes, name):
         ax.grid(True, **GRID)
         style_axes(ax)
     axes[0].set_title(name, fontsize=10.5, color=INK, loc="left")
-    axes[0].set_ylabel("MAE (cm)", fontsize=10, color=INK)
+    axes[0].set_ylabel("MAE (solid) / RMSE (dashed), cm", fontsize=10, color=INK)
     axes[1].set_ylabel("Signed error (cm), median ± IQR", fontsize=10, color=INK)
     axes[1].set_xlabel("True position (cm)", fontsize=10, color=INK)
 
@@ -321,7 +323,7 @@ def overlay_figure(save_path):
         if col > 0:
             for ax in axes[:, col]:
                 ax.set_ylabel("")
-    axes[0, 0].legend(loc="upper right", fontsize=8, frameon=False)
+    axes[0, 0].legend(loc="upper right", fontsize=7, frameon=False)
     fig.suptitle("Error along the corridor — baseline vs. position-tail variant "
                  f"(pooled folds, true ≤ {CONTEXT_END_CM} cm)", fontsize=11, color=INK,
                  x=0.02, ha="left", y=0.995)

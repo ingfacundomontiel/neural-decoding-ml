@@ -228,9 +228,19 @@ Make the per-dataset training data quantity comparable across datasets.
   post-preprocess script local to the thesis? (Leaning: local script for
   iteration speed; upstream later once the strategy is locked.)
 
-#### Item 5 — Position vs. velocity dissociation analysis (queued)
+#### Item 5 — Position vs. velocity dissociation analysis (first pass done)
 
 Priority: after Item 1 (needs the pos-only models).
+
+**First pass (2026-09-05, operational definition from the director):**
+`exploration/11-speed-split-error.py` splits every test bin by the dataset's
+median speed and compares the position error slow vs fast, stratified by
+corridor zone (speed and position are correlated, so the unstratified split
+confounds itself). Medians across the 17 datasets: fast decodes better inside
+the corridor (MAE slow−fast: +5.1 cm pre-context, +2.8 cm in-context) while
+slow decodes better past the exit (−8.0 cm — the slow post bins are reward-zone
+licking, the fast ones running drift). Training on speed-filtered bins
+(test 2) remains queued below.
 
 Post-hoc analysis, not a training run. Filter test-set bins where the
 animal's velocity profile breaks its own stereotypy, then re-evaluate the
@@ -287,8 +297,8 @@ those bins hurts the decoder everywhere.
 
 **The one change vs. the shared baseline:** a new bin-level filter in
 `ibioml.preprocess_data` that, per trial, removes every bin from the first
-crossing of `thPositionEnd` (raw encoder units; **provisional 515° ≈ 62.9 cm**,
-pending the director's confirmation of the value used in the lab's baselines)
+crossing of `thPositionEnd` (raw encoder units; **515° ≈ 62.9 cm — confirmed by the
+director on 2026-09-05 as the exact cut used in his linear baselines**)
 to the trial's last bin, padded by `bins_after` before the crossing so no
 surviving sample carries post-exit activity in its history window.
 Union-merged into `indices_to_remove` before standardisation. Every other
@@ -318,6 +328,49 @@ filters) stays exactly as in the baseline. ADR: D-017.
 - **Not in scope**: the corridor start. Its bias (+13 cm) has a different
   mechanism (ambiguous neural state right after the teleport) and is already
   handled by the trial-transition filter; one change at a time.
+- **Nice to have — buffer cut** (proposed 2026-08-27, parked 2026-09-05): a
+  second variant with `thPositionEnd` ≈ 650° (~80 cm), evaluated on ≤ 62.9 cm
+  like the pilot. Rationale: the pilot's edge effect moved to the context exit
+  (bias −8 → −17 cm inside the context); a buffer keeps the far tail out of
+  training while the context stays away from the training edge, separating
+  "target-distribution / edge" effects from "contaminated activity" effects.
+- **Post-hoc (2026-09-05)**: `exploration/10-error-by-trial-type.py` tested the
+  hypothesis that rewarded+licked trials drive the tail error. They own ~62 %
+  of the post-context test bins but are the *best*-decoded trials there at
+  matched positions; the deep tail belongs mostly to unrewarded running-drift
+  trials, whose bias plunges to −30/−45 cm. Inside the corridor the four
+  ctxt × odor types have indistinguishable error curves.
+
+#### Item 7 — Gaussian-smoothed spike counts replacing the history window — approved 2026-09-05
+
+Director's proposal: impose temporal continuity on the input by smoothing each
+neuron's spike-count series with a short Gaussian (σ = 200 ms = 1 bin), and let
+that replace the 5-bin history window (`bins_before/current/after` 2/1/2 →
+0/1/0, current bin only).
+
+Pilot on **one dataset** (`Pir_N31_expert`, best position R²), pos-only, full
+2×2 so each factor is attributable (agreed with Facundo 2026-09-05):
+
+| run | activity | window | answers |
+|---|---|---|---|
+| baseline (exists) | raw | 2/1/2 | anchor |
+| A | smoothed σ=200 ms | 0/1/0 | the proposal |
+| B | raw | 0/1/0 | how much the window alone was worth |
+| C | smoothed σ=200 ms | 2/1/2 | does smoothing add on top of the window |
+
+- **Implementation**: `gaussianSigmaMs=None` (off by default) in
+  `ibioml.preprocess_data`, applied per neuron along time **before**
+  `get_spikes_with_history` (fork branch, test-first per D-012);
+  `--gaussian-sigma-ms`, `--bins-before`, `--bins-after` flags in
+  `scripts/preprocess_all.py`. Each run gets its own pickle/results tree.
+- **Comparability**: smoothing removes no bins, so all four runs share the
+  baseline's test support and fold partition — direct comparison, no D-018
+  restriction needed.
+- **Known limitation**: the Gaussian blurs activity across the boundaries of
+  removed bins (teleports, immobility stretches); with σ = 1 bin the leak dies
+  within ~2 bins and transitions are already padded. Recorded, accepted for
+  the pilot.
+- **Cost**: ~50–80 min per run on the GPU host → ~2.5–4 h for A+B+C.
 
 ### Phase 5 cross-item conventions
 

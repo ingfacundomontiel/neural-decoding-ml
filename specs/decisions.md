@@ -482,6 +482,11 @@ baselines and align `thPositionEnd` if it differs. (2) Pilot on the three
 expert datasets, pos-only, evaluated per D-018. (3) Unit tests + upstream PR
 from the fork branch once the pilot validates the filter.
 
+**Update (2026-09-05).** Follow-up (1) closed: the director confirmed that
+**515° is exactly the cut he used** in his linear baselines. The threshold is
+no longer provisional. (2) was extended to five datasets (Batches 003–004,
+see `docs/experiment-log.md`); (3) still pending.
+
 ---
 
 ## D-018 — Report decoding error in physical units (RMSE, MAE); R² secondary; compare on equal support

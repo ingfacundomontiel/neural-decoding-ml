@@ -30,6 +30,7 @@ venv/
 # OS / editor
 .DS_Store
 .vscode/
+.obsidian/
 .idea/
 *.swp
 *.swo

@@ -66,8 +66,8 @@ def binned_error(y_true: np.ndarray, y_pred: np.ndarray, edges: np.ndarray,
     """Error as a function of the *true* value, binned by *edges*.
 
     One row per bin: centre, count, median / q25 / q75 of the signed error,
-    MAE. Bins with fewer than *min_count* samples get NaN statistics (count
-    is still reported) so sparse regions don't produce noisy curves.
+    MAE, RMSE. Bins with fewer than *min_count* samples get NaN statistics
+    (count is still reported) so sparse regions don't produce noisy curves.
     """
     err = y_pred - y_true
     idx = np.digitize(y_true, edges) - 1
@@ -79,9 +79,11 @@ def binned_error(y_true: np.ndarray, y_pred: np.ndarray, edges: np.ndarray,
         if sel.size >= min_count:
             q25, q50, q75 = np.percentile(sel, [25, 50, 75])
             row.update(median_signed=q50, q25=q25, q75=q75,
-                       mae=float(np.mean(np.abs(sel))))
+                       mae=float(np.mean(np.abs(sel))),
+                       rmse=float(np.sqrt(np.mean(sel ** 2))))
         else:
-            row.update(median_signed=np.nan, q25=np.nan, q75=np.nan, mae=np.nan)
+            row.update(median_signed=np.nan, q25=np.nan, q75=np.nan,
+                       mae=np.nan, rmse=np.nan)
         rows.append(row)
     return pd.DataFrame(rows)
 

@@ -134,3 +134,60 @@ def pool_folds(
     y_pred = np.concatenate([p for _, p in folds])
     fold_id = np.concatenate([np.full(len(t), k + 1) for k, (t, _) in enumerate(folds)])
     return y_true, y_pred, fold_id
+
+
+# --- attaching pooled predictions back to pickle rows -------------------------
+
+REGION_TO_DIR = {"Pir": "piriform", "CA3": "ca3", "DG": "dg"}
+
+
+def pickle_path(data_dir: str | Path, info: StudyInfo,
+                variant: str = "_withCtxt_flat.pickle") -> Path:
+    """Path of a preprocessed pickle for *info*'s dataset under *data_dir*."""
+    return Path(data_dir) / REGION_TO_DIR[info.region] / f"{info.stem}{variant}"
+
+
+def mat_path(raw_dir: str | Path, info: StudyInfo) -> Path:
+    """Path of the raw recording `.mat` for *info*'s dataset under *raw_dir*."""
+    return Path(raw_dir) / REGION_TO_DIR[info.region] / f"{info.stem}.mat"
+
+
+def fold_test_trials(results_dir: str | Path, study: str) -> list[list[int]]:
+    """Per outer fold, the test-trial ids recorded in `training_results/fold_<k>/results.json`."""
+    root = Path(results_dir) / study / "training_results"
+    out: list[list[int]] = []
+    k = 1
+    while (f := root / f"fold_{k}" / "results.json").is_file():
+        with f.open() as fh:
+            out.append([int(t) for t in json.load(fh)["test_trials"]])
+        k += 1
+    if not out:
+        raise FileNotFoundError(f"no fold results under {root}")
+    return out
+
+
+def pooled_test_rows(results_dir: str | Path, study: str,
+                     y_pos: np.ndarray, trial_markers: np.ndarray) -> np.ndarray:
+    """Pickle-row index of each pooled test prediction, verified against the stored targets.
+
+    The tuner's fold-k test set is every pickle row whose trial id is in that fold's
+    ``test_trials``, in ascending (temporal) order — reconstructed here and checked
+    exactly against the de-standardised true values saved in ``final_results.json``,
+    so a mismatch (wrong pickle, regenerated data, changed seed) fails loudly instead
+    of silently mislabelling bins. *y_pos* is the pickle's position column in the
+    pickle's raw units (encoder degrees); *trial_markers* its per-row trial ids.
+    """
+    final = load_final_results(results_dir, study)
+    folds = fold_predictions(final, "position")
+    trials = fold_test_trials(results_dir, study)
+    if len(trials) != len(folds):
+        raise ValueError(f"{study}: {len(trials)} fold dirs vs {len(folds)} stored folds")
+    rows = []
+    for k, ((y_true, _), fold_trials) in enumerate(zip(folds, trials, strict=True), start=1):
+        idx = np.where(np.isin(trial_markers, fold_trials))[0]
+        if len(idx) != len(y_true) or not np.allclose(y_pos[idx], y_true, atol=1e-8):
+            raise ValueError(
+                f"{study} fold {k}: reconstructed rows do not match the stored true values "
+                f"(n {len(idx)} vs {len(y_true)}) — wrong or regenerated pickle?")
+        rows.append(idx)
+    return np.concatenate(rows)
