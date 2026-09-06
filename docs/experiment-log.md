@@ -12,6 +12,39 @@ Sorted newest-first.
 
 ---
 
+## Batch 006 — Item 7 extension: smoothing 2×2 on the remaining piriform datasets
+
+- **Date launched**: 2026-09-05 19:06 (GPU local time; wrapper
+  `results_smooth200_w010/logs/batch006_20260905_1906.log`, prints
+  `ALL_DONE_BATCH006`).
+- **Date completed**: 2026-09-06 ~09:40 (15/15 OK, ~14.6 h wall; 51–67 min per run).
+- **Thesis commit at launch**: `16a5967`. **`ibioml` pin**: `a3adf40`
+  (both unchanged in content from Batch 005; host pulled before launch).
+- **Design**: same three runs as Batch 005 (A `smooth200_w010`, B `raw_w010`,
+  C `smooth200_w212`; Batch 002 is the raw·2/1/2 anchor) on the five
+  remaining piriform datasets: `Pir_L3`, `Pir_L5`, `Pir_N59` (expert),
+  `Pir_L7`, `Pir_N53` (naive; `threshDPrime = −1.1` via filename). The
+  wrapper passes `--only Pir`, so N31 shows up as SKIP (idempotency).
+- **Volume**: 15 experiments (5 datasets × 3 runs). Estimated 14–16 h at the
+  observed ~5.2 min per 1,000 bins.
+- **Preprocess**: same per-tree flags as Batch 005; bins kept (w010 / w212):
+  L3 10,665 / 9,715 · L5 10,772 / 9,759 · L7 12,487 / 11,587 ·
+  N53 9,912 / 9,020 · N59 12,512 / 11,339. Neurons match the baseline within
+  each window size; note L7 keeps 62 neurons at 0/1/0 vs 61 at 2/1/2 (the
+  window change alters the surviving bins and hence the neuron filters —
+  same side-effect class as D-017's note; within-window contrasts unaffected).
+- **Results dirs**: the three `results_<tree>/` trees, five new
+  `mlp_Pir_*_pos/` studies each.
+- **Headline finding** (per-fold medians on each dataset's common support,
+  `exploration/12-comparison-smoothing.py`): the N31 pattern **holds on the
+  experts and splits on the naive**. Smoothing on top of the window (C vs
+  baseline): experts +0.031…+0.121 R², **20/20 folds** (L3 +0.121, L5 +0.078,
+  N59 +0.043, N31 +0.031); naive −0.02…−0.03 R² with ~equal MAE (5/10 folds) —
+  neutral to slightly negative. Smoothing without the window helps everywhere
+  (+0.136 median, 29/30). The window is still not replaceable: proposal (A) vs
+  anchor −0.051 median, 2/30. Aggregate best config: **smooth σ=200 ms +
+  window 2/1/2 for experts**; for naive the baseline and C are within noise.
+
 ## Batch 005 — Item 7 pilot: Gaussian-smoothed spike counts vs history window (Pir_N31, 2×2)
 
 - **Date launched**: 2026-09-05 13:02 (GPU local time; wrapper log
