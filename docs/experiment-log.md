@@ -12,6 +12,38 @@ Sorted newest-first.
 
 ---
 
+## Batch 007 — combined pipeline: no tail + smoothing + no history window, all 17 datasets
+
+- **Date launched**: 2026-09-13 11:57 (GPU local time; wrapper
+  `results_notail_smooth_w010/logs/batch007_20260913_1157.log`, prints
+  `ALL_DONE_BATCH007`).
+- **Date completed**: (fill in).
+- **Thesis commit at launch**: `9cac813`. **`ibioml` pin**: `a3adf40`.
+- **Design** (agreed with the director 2026-09-13): one run per dataset with
+  the three pipeline changes combined — position-tail filter
+  (`thPositionEnd=515`, D-017), Gaussian smoothing (σ=200 ms, Item 7), and no
+  history window (`bins_before/current/after = 0/1/0`). With `bins_after=0`
+  the tail cut has **no padding**, so the 58–62.9 cm stripe that the
+  `posend515` runs lost to padding survives here (the padding concentrated on
+  the last ~2 bins of every trial — measured 2026-09-13: at piriform running
+  speeds it emptied 60–62.9 cm almost completely; CA3/DG less so only because
+  their support there was larger).
+- **Preprocess/config**: baseline otherwise; tree
+  `data/processed_notail_smooth_w010/` (17 datasets).
+- **Volume**: 17 experiments, pos-only. Estimated ~15 h.
+- **Host note**: an unattended driver upgrade (2026-09-11, userspace 595.91 vs
+  loaded kernel module 595.84) broke `nvidia-smi`/NVML on the host; CUDA
+  compute itself verified healthy before launch (full-speed matmul +
+  train-step smoke). Monitoring is log-based until the machine reboots; a
+  reboot mid-batch would kill the wrapper (relaunch is idempotent).
+- **Results dirs**: `results_notail_smooth_w010/mlp_<dataset>_pos/` (17).
+- **Comparison plan (on sync)**: (a) vs `results_posend515` (raw·2/1/2, no
+  tail) on the 5 pilot datasets — isolates smooth+no-window within the
+  no-tail world; (b) vs the Batch 002 baseline restricted to true ≤ 62.9 cm on
+  all 17 — new pipeline vs old. Both on common bins (extend the kept-set
+  reconstruction with the position-tail filter).
+- **Headline finding**: (fill in once read).
+
 ## Batch 006 — Item 7 extension: smoothing 2×2 on the remaining piriform datasets
 
 - **Date launched**: 2026-09-05 19:06 (GPU local time; wrapper

@@ -228,7 +228,7 @@ Make the per-dataset training data quantity comparable across datasets.
   post-preprocess script local to the thesis? (Leaning: local script for
   iteration speed; upstream later once the strategy is locked.)
 
-#### Item 5 — Position vs. velocity dissociation analysis (first pass done)
+#### Item 5 — Position vs. velocity dissociation analysis (phase 0 done)
 
 Priority: after Item 1 (needs the pos-only models).
 
@@ -241,6 +241,19 @@ the corridor (MAE slow−fast: +5.1 cm pre-context, +2.8 cm in-context) while
 slow decodes better past the exit (−8.0 cm — the slow post bins are reward-zone
 licking, the fast ones running drift). Training on speed-filtered bins
 (test 2) remains queued below.
+
+**Phase 0 (2026-09-13, post-hoc, no GPU — the decoupling battery):**
+`exploration/13-decoupling-posthoc.py` (A1 within-position speed↔error coupling;
+A2 broken-stereotypy bins, |z| > 2 vs the per-position speed profile, position-matched
+Δ MAE with bootstrap CI; A3 error correlation between the pos and vel decoders) and
+`exploration/14-decoupling-behavioral-control.py` (ridge decoding position from the
+speed window + context only — the behavioural ceiling — on the neural studies' exact
+fold partition). Outputs under `results/plots/decoupling/{posthoc,behavioral-control}/`.
+Headline on the six best decoders: coupling +0.00…+0.16, slow-atypical Δ MAE +0…+3 cm,
+behavioural ceiling R² 0.11–0.19 vs neural 0.32–0.52 (margin +0.15…+0.38, 5/5 folds
+everywhere) — the decoder carries position information well beyond the running
+stereotypy, with a small residual speed leak (largest in DG_S17). Phase 1 (train-on-
+one-speed-regime transfer) is optional confirmation, to decide with the director.
 
 Post-hoc analysis, not a training run. Filter test-set bins where the
 animal's velocity profile breaks its own stereotypy, then re-evaluate the
