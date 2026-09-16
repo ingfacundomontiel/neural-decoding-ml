@@ -12,12 +12,57 @@ Sorted newest-first.
 
 ---
 
+## Batch 009 — cell 7 (no tail, no window, no smoothing), position + velocity, all 17
+
+- **Date launched**: 2026-09-16 11:08 (GPU local time) as a **chained wrapper**
+  (`results_notail_raw_w010/logs/batch009_20260916_1108.log`): it waits for
+  Batch 008's `ALL_DONE_BATCH008` (or for no runner process to remain, in case
+  008 dies) and then runs 009a (`--targets pos`) followed by 009b
+  (`--targets vel`). Prints `ALL_DONE_BATCH009`.
+- **Date completed**: (fill in).
+- **Thesis commit at launch**: `9cac813`. **`ibioml` pin**: `a3adf40`.
+- **Design** (agreed 2026-09-16, "analicémoslo juntos" round): fill factorial
+  cell 7 — position-tail filter 515° + window 0/1/0 + **raw** spike counts —
+  for both targets. Purpose: (i) 7 vs Batch 007/008 isolates the pure
+  smoothing effect in the final pipeline (identical kept bins and folds —
+  smoothing removes no rows); (ii) 7-pos vs posend515 gives the window's value
+  in the raw no-tail world (5 pilots); (iii) tail × smoothing interaction
+  becomes testable (smoothing effect measured with tail: ΔR² ≈ +0.14, A vs B).
+  Predicted from measured effects: 7-pos ≈ posend515 − ~0.2 R²; expected
+  smoothing gain (007 vs 009a) ≈ +0.15. Decisions: the window stays
+  deprioritised (5-pilot posend515 suffices as its reference; no 5→17
+  extension) and no no-tail+window reference for velocity.
+- **Preprocess**: tree `data/processed_notail_raw_w010/` (17 datasets; same
+  kept bins as `notail_smooth_w010` by construction).
+- **Volume**: 34 experiments (17 pos + 17 vel). Estimated ~28 h after 008 ends.
+- **Headline finding**: (fill in once read).
+
+## Batch 008 — same pipeline as Batch 007, velocity target, all 17 datasets
+
+- **Date launched**: 2026-09-16 11:00 (GPU local time; wrapper
+  `results_notail_smooth_w010/logs/batch008_20260916_1100.log`, prints
+  `ALL_DONE_BATCH008`).
+- **Date completed**: (fill in).
+- **Thesis commit at launch**: `9cac813` (host tree clean). **`ibioml` pin**: `a3adf40`.
+- **Design**: identical preprocessing to Batch 007 (no tail 515° + Gaussian
+  smoothing σ=200 ms + window 0/1/0; the `_withCtxt_onlyVelocity_flat` pickles
+  were already emitted by Batch 007's preprocess), target **velocity**
+  (`--targets vel`), same results tree (`_vel` study suffix). Rationale
+  (Facundo, 2026-09-16): smoothing is treated as the *replacement* for the
+  history window — both inject temporal context into the current bin — so the
+  smoothing+window cell is deprioritised; the comparison of interest going
+  forward is smoothed vs raw, both windowless and tail-less.
+- **Volume**: 17 experiments. Estimated ~15 h.
+- **Reference for comparison**: the Batch 002 velocity studies
+  (raw + window 2/1/2 + tail included, 17 datasets), on common bins.
+- **Headline finding**: (fill in once read).
+
 ## Batch 007 — combined pipeline: no tail + smoothing + no history window, all 17 datasets
 
 - **Date launched**: 2026-09-13 11:57 (GPU local time; wrapper
   `results_notail_smooth_w010/logs/batch007_20260913_1157.log`, prints
   `ALL_DONE_BATCH007`).
-- **Date completed**: (fill in).
+- **Date completed**: 2026-09-14 ~02:56 (17/17 OK, ~15 h wall).
 - **Thesis commit at launch**: `9cac813`. **`ibioml` pin**: `a3adf40`.
 - **Design** (agreed with the director 2026-09-13): one run per dataset with
   the three pipeline changes combined — position-tail filter
@@ -42,7 +87,17 @@ Sorted newest-first.
   no-tail world; (b) vs the Batch 002 baseline restricted to true ≤ 62.9 cm on
   all 17 — new pipeline vs old. Both on common bins (extend the kept-set
   reconstruction with the position-tail filter).
-- **Headline finding**: (fill in once read).
+- **Headline finding** (`exploration/15-comparison-notail-smooth.py`, common
+  bins, paired folds): **vs the old pipeline (baseline), the combined pipeline
+  wins broadly** — median across 17 datasets Δ R² **+0.258**, Δ RMSE **−2.8 cm**,
+  Δ MAE **−1.5 cm** (78/85, 78/85, 73/85 folds); biggest on the DG experts
+  (S17 +0.55, S19 +0.50 R²), smallest on some naive (N53 +0.015, S31 +0.012).
+  **Vs posend515** (no-tail, raw + window; the 5 pilots) the new run is
+  slightly worse — Δ R² −0.047, Δ RMSE/MAE +0.7 cm (1/25 folds) — consistent
+  with Item 7: the 1-bin smoothed input does not fully replace the window.
+  The tail removal carries the improvement; the obvious untested cell is
+  **no-tail + smoothing + window 2/1/2**, expected to beat posend515 by the
+  Item-7 margin (~+0.03 R²).
 
 ## Batch 006 — Item 7 extension: smoothing 2×2 on the remaining piriform datasets
 
