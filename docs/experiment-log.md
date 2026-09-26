@@ -12,11 +12,60 @@ Sorted newest-first.
 
 ---
 
+## Batch 012 — neural + behaviour decoder (smoothed neurons + speed ±400 ms + context), all 17
+
+- **Date launched**: 2026-09-26 13:38 (laptop time), in parallel with Batches
+  010/011 (`results_neural_speedctx_w010/logs/batch012_20260926_1338.log`), two
+  runners (`--regions piriform,ca3` | `--regions dg`). Prints `ALL_DONE_BATCH012`.
+- **Date completed**: (fill in).
+- **Thesis commit at launch**: `9cac813` on the host; builder
+  `scripts/build_behavioral_pickles.py --include-neural` uncommitted at launch.
+  **`ibioml` pin**: `a3adf40`.
+- **Design**: the incremental half of the decoupling control (T3). Features =
+  the final-pipeline neural features (smoothed counts of the kept neurons) **plus**
+  the Batch 011 behaviour features (speed t−2…t+2, context one-hot); same MLP,
+  Optuna, folds, kept bins and target. The gain of this decoder over Batch 011
+  is the position information the neurons carry beyond running. Motivated by a
+  CPU preview with gradient-boosted trees (`conferences/san-2026/scripts/
+  t3_behavior_preview.py`): speed + context alone reach R² up to ~0.48, but adding
+  the neurons improves R² in all 17 recordings (Δ +0.04…+0.28, 4–5/5 folds).
+- **Preprocess**: tree `data/processed_neural_speedctx_w010/` (17 datasets).
+- **Volume**: 17 experiments, pos-only.
+- **Results dirs**: `results_neural_speedctx_w010/mlp_<dataset>_pos/`.
+- **Headline finding**: (fill in once read).
+
+## Batch 011 — behaviour-only decoder (speed ±400 ms + context), final-pipeline bins, all 17
+
+- **Date launched**: 2026-09-26 13:18 (laptop time) as a **chained wrapper**;
+  relaunched 13:38 (`results_behav_speedctx_w010/logs/batch011_20260926_1338.log`)
+  to run **two runners in parallel** (`--regions piriform,ca3` | `--regions dg`)
+  once Batch 010 finishes. Prints `ALL_DONE_BATCH011`.
+- **Date completed**: (fill in).
+- **Thesis commit at launch**: `9cac813` on the host (runner unchanged); the
+  pickle builder `scripts/build_behavioral_pickles.py` was uncommitted at launch
+  (pickles built locally and synced). **`ibioml` pin**: `a3adf40`.
+- **Design**: decoupling control for the SAN 2026 poster (open topic T3 in
+  `conferences/san-2026/plan.md`). Same MLP, Optuna space, trial folds and kept
+  bins as Batch 007 (final pipeline: tail 515°, smoothing σ=200 ms, window
+  0/1/0), but **no neural input**: `X = [speed(t−2…t+2), ctx, not-ctx]`
+  (7 features; speed neighbours taken on the raw recording, the same convention
+  as the Gaussian smoothing). Target: position. Answers "how far could a decoder
+  that only reads the animal's running get?" with a non-linear model — the
+  ridge of `exploration/14-…` is linear and underestimates that ceiling. Rows,
+  targets and trial markers verified identical to the Batch 007 pickles, so
+  folds are paired (`TrialKFold` seed 42 depends only on the trial markers).
+- **Preprocess**: tree `data/processed_behav_speedctx_w010/` (17 datasets),
+  derived from `data/processed_notail_smooth_w010/` + the raw `.mat` speed.
+- **Volume**: 17 experiments, pos-only. Estimated ~15 h after Batch 010 ends.
+- **Results dirs**: `results_behav_speedctx_w010/mlp_<dataset>_pos/`.
+- **Headline finding**: (fill in once read).
+
 ## Batch 010 — posend515 completion for piriform (Pir_N59, Pir_L7, Pir_N53), position
 
 - **Date launched**: 2026-09-26 12:02 (GPU local time; wrapper
   `results_posend515/logs/batch010_20260926_1202.log`, prints `ALL_DONE_BATCH010`).
-- **Date completed**: (fill in).
+- **Date completed**: 2026-09-26 ~14:25 (3/3 OK: L7 2619 s, N53 2552 s, N59 3381 s).
+  Synced locally the same day.
 - **Thesis commit at launch**: `9cac813` (host tree clean). **`ibioml` pin**: `a3adf40`.
 - **Design**: same configuration as Batches 003/004 (`posend515`: tail filter
   515°, window 2/1/2, raw spike counts), position target, on the three
@@ -28,7 +77,15 @@ Sorted newest-first.
   Pickles already existed (`data/processed_posend515/`, all 17, from Batch 003).
 - **Volume**: 3 experiments, ~2–2.5 h.
 - **Results dirs**: `results_posend515/mlp_Pir_{N59,L7,N53}_*_pos/`.
-- **Headline finding**: (fill in once read).
+- **Headline finding**: with the 'no tail, window kept' row now complete for
+  piriform (N = 6), the ladder's tail-removal contrast (L1) on 8 datasets is
+  Δ R² **+0.322** (39/40 folds; experts +0.392 30/30, naive +0.173 9/10) and
+  the window-removal contrast (L2) **−0.153** (4/40; experts −0.182, naive
+  −0.078 — the window matters less for naive animals). Piriform experts, bins
+  ≤ 62.9 cm, mean R²: baseline 0.197 → no tail 0.491 → whole pipeline 0.436;
+  N59 (the weakest expert) pulls the 'no tail' mean down from 0.570 (3
+  pilots) to 0.491. Tables: `exploration/18-config-summary-tables.py` →
+  `results/plots/effects-ladder/config_summary_{all,experts}.md`.
 
 ## Batch 009 — cell 7 (no tail, no window, no smoothing), position + velocity, all 17
 
