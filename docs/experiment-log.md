@@ -12,6 +12,24 @@ Sorted newest-first.
 
 ---
 
+## Batch 010 — posend515 completion for piriform (Pir_N59, Pir_L7, Pir_N53), position
+
+- **Date launched**: 2026-09-26 12:02 (GPU local time; wrapper
+  `results_posend515/logs/batch010_20260926_1202.log`, prints `ALL_DONE_BATCH010`).
+- **Date completed**: (fill in).
+- **Thesis commit at launch**: `9cac813` (host tree clean). **`ibioml` pin**: `a3adf40`.
+- **Design**: same configuration as Batches 003/004 (`posend515`: tail filter
+  515°, window 2/1/2, raw spike counts), position target, on the three
+  piriform datasets that were not pilots — `Pir_N59` (expert), `Pir_L7` and
+  `Pir_N53` (naive). Purpose: complete the "no tail, window kept" row of the
+  piriform per-configuration table (`results/plots/effects-ladder/
+  piriform_summary.md`) so every row has N = 6, and extend the ladder's L1/L2
+  contrasts from 5 to 8 datasets (first naive animals in those contrasts).
+  Pickles already existed (`data/processed_posend515/`, all 17, from Batch 003).
+- **Volume**: 3 experiments, ~2–2.5 h.
+- **Results dirs**: `results_posend515/mlp_Pir_{N59,L7,N53}_*_pos/`.
+- **Headline finding**: (fill in once read).
+
 ## Batch 009 — cell 7 (no tail, no window, no smoothing), position + velocity, all 17
 
 - **Date launched**: 2026-09-16 11:08 (GPU local time) as a **chained wrapper**
@@ -19,7 +37,10 @@ Sorted newest-first.
   Batch 008's `ALL_DONE_BATCH008` (or for no runner process to remain, in case
   008 dies) and then runs 009a (`--targets pos`) followed by 009b
   (`--targets vel`). Prints `ALL_DONE_BATCH009`.
-- **Date completed**: (fill in).
+- **Date completed**: 2026-09-18 (34/34 OK — started 2026-09-17 02:08 after
+  Batch 008, per the chained wrapper). Synced locally 2026-09-24. Note: the
+  host was later power-cycled (2026-09-24), which also fixed the NVML driver
+  mismatch (now 595.91 end to end).
 - **Thesis commit at launch**: `9cac813`. **`ibioml` pin**: `a3adf40`.
 - **Design** (agreed 2026-09-16, "analicémoslo juntos" round): fill factorial
   cell 7 — position-tail filter 515° + window 0/1/0 + **raw** spike counts —
@@ -35,14 +56,30 @@ Sorted newest-first.
 - **Preprocess**: tree `data/processed_notail_raw_w010/` (17 datasets; same
   kept bins as `notail_smooth_w010` by construction).
 - **Volume**: 34 experiments (17 pos + 17 vel). Estimated ~28 h after 008 ends.
-- **Headline finding**: (fill in once read).
+- **Headline finding** (`exploration/16-effects-ladder.py`; every contrast on
+  the pair's common bins with paired folds; tables + figure under
+  `results/plots/effects-ladder/`):
+  - **L3 smoothing, no tail, no window (identical rows, 17)**: position
+    Δ R² **+0.104** (80/85 folds; experts +0.117, naive +0.079), Δ MAE −1.6 cm.
+    Velocity (**V3**): Δ R² **+0.131** (84/85; experts +0.170, naive +0.108
+    40/40), Δ MAE −0.4 cm/s. Smoothing helps both targets and both cohorts.
+  - **L2 window removal, raw, no tail (5 pilots)**: Δ R² **−0.210** (1/25),
+    Δ MAE +3.0 cm — the window is worth ~twice what smoothing recovers.
+  - Ladder for position (medians): tail removal +0.43 (L1) → window removal
+    −0.21 (L2) → smoothing +0.10 (L3); whole pipeline vs baseline +0.20
+    (L4, 78/85; experts +0.28, naive +0.11).
+  - Interaction tail × smoothing (6 piriform): smoothing gives +0.123 with
+    the tail and +0.135 without — additive within noise.
+  - Predictions from 2026-09-16 held: window cost ≈ −0.2 ✓, smoothing gain
+    ≈ +0.15 predicted vs +0.10 measured.
 
 ## Batch 008 — same pipeline as Batch 007, velocity target, all 17 datasets
 
 - **Date launched**: 2026-09-16 11:00 (GPU local time; wrapper
   `results_notail_smooth_w010/logs/batch008_20260916_1100.log`, prints
   `ALL_DONE_BATCH008`).
-- **Date completed**: (fill in).
+- **Date completed**: 2026-09-17 ~02:08 (17/17 OK; Batch 009's chained wrapper
+  started right then). Synced locally 2026-09-24.
 - **Thesis commit at launch**: `9cac813` (host tree clean). **`ibioml` pin**: `a3adf40`.
 - **Design**: identical preprocessing to Batch 007 (no tail 515° + Gaussian
   smoothing σ=200 ms + window 0/1/0; the `_withCtxt_onlyVelocity_flat` pickles
@@ -55,7 +92,15 @@ Sorted newest-first.
 - **Volume**: 17 experiments. Estimated ~15 h.
 - **Reference for comparison**: the Batch 002 velocity studies
   (raw + window 2/1/2 + tail included, 17 datasets), on common bins.
-- **Headline finding**: (fill in once read).
+- **Headline finding** (`exploration/16-effects-ladder.py`, V4, common bins,
+  paired folds): for **velocity the combined pipeline is slightly worse than
+  the baseline** — median Δ R² −0.038, Δ MAE +0.1 cm/s (20/85 folds won) —
+  even though smoothing alone helps velocity a lot (V3, Batch 009). Velocity
+  decoding relies on the history window / the tail bins more than position
+  does. `exploration/17-velocity-checks.py`: velocity MAE is flat along the
+  corridor (~3 cm/s pre/ctx, 2.6 in the tail — no tail concentration), and
+  the pos↔vel error coupling barely moves (+0.10 → +0.12): smoothing does
+  not couple the two decoders.
 
 ## Batch 007 — combined pipeline: no tail + smoothing + no history window, all 17 datasets
 
