@@ -17,7 +17,7 @@ Sorted newest-first.
 - **Date launched**: 2026-09-26 13:38 (laptop time), in parallel with Batches
   010/011 (`results_neural_speedctx_w010/logs/batch012_20260926_1338.log`), two
   runners (`--regions piriform,ca3` | `--regions dg`). Prints `ALL_DONE_BATCH012`.
-- **Date completed**: (fill in).
+- **Date completed**: 2026-09-27 02:25 (17/17 OK). Synced locally 2026-09-27.
 - **Thesis commit at launch**: `9cac813` on the host; builder
   `scripts/build_behavioral_pickles.py --include-neural` uncommitted at launch.
   **`ibioml` pin**: `a3adf40`.
@@ -32,7 +32,12 @@ Sorted newest-first.
 - **Preprocess**: tree `data/processed_neural_speedctx_w010/` (17 datasets).
 - **Volume**: 17 experiments, pos-only.
 - **Results dirs**: `results_neural_speedctx_w010/mlp_<dataset>_pos/`.
-- **Headline finding**: (fill in once read).
+- **Headline finding** (vs Batch 011, same MLP / folds / bins, fold-median R²):
+  adding the neurons to speed + context improves position decoding in **16/17**
+  recordings (median Δ R² **+0.116**, 77/85 folds); largest in Pir_L5 +0.29,
+  DG_S24 +0.29, Pir_N31 +0.23, CA3_S31 +0.20; the only loss is DG_S18 (−0.03,
+  3/5). Confirms the gradient-boosting preview with the poster's own decoder.
+  Not used in the SAN 2026 poster (decided 2026-09-27: too early to present).
 
 ## Batch 011 — behaviour-only decoder (speed ±400 ms + context), final-pipeline bins, all 17
 
@@ -40,7 +45,7 @@ Sorted newest-first.
   relaunched 13:38 (`results_behav_speedctx_w010/logs/batch011_20260926_1338.log`)
   to run **two runners in parallel** (`--regions piriform,ca3` | `--regions dg`)
   once Batch 010 finishes. Prints `ALL_DONE_BATCH011`.
-- **Date completed**: (fill in).
+- **Date completed**: 2026-09-27 02:23 (17/17 OK). Synced locally 2026-09-27.
 - **Thesis commit at launch**: `9cac813` on the host (runner unchanged); the
   pickle builder `scripts/build_behavioral_pickles.py` was uncommitted at launch
   (pickles built locally and synced). **`ibioml` pin**: `a3adf40`.
@@ -58,7 +63,13 @@ Sorted newest-first.
   derived from `data/processed_notail_smooth_w010/` + the raw `.mat` speed.
 - **Volume**: 17 experiments, pos-only. Estimated ~15 h after Batch 010 ends.
 - **Results dirs**: `results_behav_speedctx_w010/mlp_<dataset>_pos/`.
-- **Headline finding**: (fill in once read).
+- **Headline finding** (vs the neural MLP of Batch 007, same folds and bins):
+  a decoder that only reads speed (±400 ms) + context matches the neural one —
+  median neural − behaviour Δ R² **−0.005** across the 17 recordings. The
+  neural decoder is clearly ahead in Pir_L5 (+0.17), DG_S24 (+0.20), Pir_N31
+  (+0.11), CA3_S31 (+0.09) and clearly behind in DG_S19 (−0.19), DG_S18,
+  DG_S39 (−0.09…−0.10). The linear control of `exploration/14-…` (R² 0.11–0.19)
+  had underestimated this ceiling. Read together with Batch 012.
 
 ## Batch 010 — posend515 completion for piriform (Pir_N59, Pir_L7, Pir_N53), position
 
