@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SAN 2026 poster</title>
+<style>
+  @font-face { font-family: "Plex"; src: url("assets/fonts/IBMPlexSans-Regular.ttf"); font-weight: 400; }
+  @font-face { font-family: "Plex"; src: url("assets/fonts/IBMPlexSans-Italic.ttf"); font-weight: 400; font-style: italic; }
+  @font-face { font-family: "Plex"; src: url("assets/fonts/IBMPlexSans-Medium.ttf"); font-weight: 500; }
+  @font-face { font-family: "Plex"; src: url("assets/fonts/IBMPlexSans-SemiBold.ttf"); font-weight: 600; }
+  @font-face { font-family: "Plex"; src: url("assets/fonts/IBMPlexSans-Bold.ttf"); font-weight: 700; }
+
+  :root {
+    --ink: #1E1E1E; --ink-soft: #5A5A5A; --rule: #333;
+    --pir: #0B63A5; --ca3: #8E3B8F; --dg: #C0581B;
+    --pir-light: #7FB1DA; --ca3-light: #C99BCB; --dg-light: #EBAA83;
+    --ctx-zone: #FFF3C4;
+  }
+  @page { size: 90cm 125cm; margin: 0; }
+  html, body { margin: 0; background: #fff; }
+  body {
+    width: 90cm; height: 125cm; box-sizing: border-box; padding: 1.6cm 2.5cm 1cm;
+    font-family: "Plex", sans-serif; font-size: 28pt; line-height: 1.32; color: var(--ink);
+    display: flex; flex-direction: column; gap: 1.2cm; overflow: auto;
+  }
+  img { display: block; }
+
+  /* header */
+  header { display: grid; grid-template-columns: 8cm 1fr 8cm; align-items: center; gap: 2cm; }
+  header img { width: 8cm; }
+  .title-block { text-align: center; }
+  h1 { font-size: 72pt; font-weight: 600; line-height: 1.08; margin: 0 0 0.5cm; letter-spacing: -0.01em; }
+  p.authors, .authors { font-size: 38pt; color: var(--ink-soft); margin: 0 0 0.3cm; }
+  p.affil, .affil { font-size: 24pt; color: var(--ink-soft); line-height: 1.3; }
+  sup { font-size: 0.6em; line-height: 0; }
+
+  /* footer: sits in what used to be the bottom margin, so the columns keep their 122.5 cm limit */
+  footer { margin-top: -0.7cm; height: 1cm; text-align: center; font-size: 22pt; line-height: 1cm;
+           color: var(--ink-soft); }
+
+  /* body grid */
+  main { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 2cm; min-height: 0; }
+  .col { display: flex; flex-direction: column; gap: 1.0cm; min-height: 0; }
+  section {
+    border: 5pt solid var(--rule); border-radius: 1.1cm; padding: 0.8cm 1.4cm 0.9cm;
+    display: flex; flex-direction: column; gap: 0.6cm;
+  }
+  h2 { font-size: 46pt; font-weight: 600; line-height: 1.1; margin: 0; }
+  h3 { font-size: 36pt; font-weight: 500; margin: 0; }
+  p { margin: 0; font-size: 30pt; }
+  p.caption, .caption { font-size: 22pt; color: var(--ink-soft); line-height: 1.3; }
+  p.cite, .cite { font-size: 22pt; color: var(--ink-soft); }
+  .row { display: flex; gap: 1cm; align-items: flex-start; }
+  .pending { border: 3pt dashed #C0581B; border-radius: 0.6cm; padding: 0.8cm; color: #C0581B;
+             font-size: 26pt; background: #FFF8F3; }
+  ul { margin: 0; padding-left: 1.1em; }
+  li { margin: 0 0 0.2cm; }
+
+  /* region frames (predictions) */
+  .region { position: relative; border: 4pt solid; border-radius: 0.8cm; padding: 0.7cm 0.4cm 0.2cm; }
+  .region > .tag { position: absolute; top: -0.75cm; left: 50%; transform: translateX(-50%);
+                   background: #fff; padding: 0 0.6cm; font-size: 36pt; font-weight: 600; line-height: 1.2; }
+  .region.pir { border-color: var(--pir); } .region.pir .tag { color: var(--pir); }
+  .region.ca3 { border-color: var(--ca3); } .region.ca3 .tag { color: var(--ca3); }
+  .region.dg  { border-color: var(--dg); }  .region.dg .tag  { color: var(--dg); }
+
+  /* poster key */
+  .key { display: flex; gap: 1.2cm; align-items: center; font-size: 24pt; justify-content: flex-start; }
+  .key span { display: inline-flex; align-items: center; gap: 0.3cm; }
+  .dot { width: 0.8cm; height: 0.8cm; border-radius: 50%; display: inline-block; border: 3pt solid; box-sizing: border-box; }
+</style>
+</head>
+<body>
+
+<header>
+  <img src="assets/san2025/logo_ibioba.png" alt="IBioBA–CONICET–MPSP">
+  <div class="title-block">
+    <h1>The olfactory cortex can learn to encode the subject’s spatial location as accurately as the hippocampus</h1>
+    <p class="authors">F. Montiel<sup>1,3,*</sup>, J. I. Ponce<sup>1,*</sup>, L. Salomon<sup>1,2</sup>, M. Ramos<sup>1</sup>, N. Federman<sup>1,3</sup>, A. Marin-Burgin<sup>1</sup>, S. A. Romano<sup>1</sup></p>
+    <p class="affil"><sup>1</sup>Biomedicine Research Institute of Buenos Aires – CONICET – Partner Institute of the Max Planck Society.
+      <sup>2</sup>University of Buenos Aires, Faculty of Exact and Natural Sciences, PhD Program, Buenos Aires, Argentina.
+      <sup>3</sup>Buenos Aires Institute of Technology (ITBA), Buenos Aires, Argentina. <sup>*</sup>Equal contribution.</p>
+  </div>
+  <img src="assets/san2025/logo_mpg.png" alt="Max Planck Society">
+</header>
+
+<main>
+  <div class="col">
+
+    <section id="intro">
+      <h2>Introduction</h2>
+      <div class="row">
+        <div style="flex: 1 1 0">
+          <p>The hippocampal–entorhinal network is the canonical substrate of spatial cognition, yet
+          spatial signals have also been found in the primary olfactory (piriform) cortex (PCx).
+          Classifiers applied to PCx activity recover the spatial context of a trial in odour–place
+          association tasks. <b>Can the animal’s moment-to-moment position be decoded from PCx?</b></p>
+          <p style="margin-top: 0.5cm">We decoded position along a virtual corridor from PCx and
+          hippocampal (CA3, DG) population activity of mice before (naive) and after (expert) learning
+          an olfactory–spatial association task.</p>
+        </div>
+        <div style="flex: 0 0 17cm; display: flex; flex-direction: column; gap: 0.5cm; align-items: center">
+          <img src="assets/san2025/intro_brain.png" style="width: 17cm" alt="">
+          <img src="assets/san2025/intro_histology.png" style="width: 10cm" alt="">
+          <p class="cite">Federman N., Romano S.A., et al., Nature Communications, 2024</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="task">
+      <h2>Olfactory discrimination in virtual reality</h2>
+      <img src="assets/san2025/task_graphics_fixed.png" style="width: 38.5cm" alt="">
+    </section>
+
+    <section id="prior">
+      <h2>Spatial context is decodable from piriform cortex</h2>
+      <div style="display: grid; grid-template-columns: 21.1cm 1fr; column-gap: 1.2cm; row-gap: 0.25cm">
+        <img src="assets/san2025/prior_federman_top_tight.png" style="width: 21.1cm" alt="">
+        <div style="display: flex; flex-direction: column; align-items: center">
+          <h3 style="font-size: 26pt; line-height: 1.1">Odour-guided four-arm maze</h3>
+          <div style="flex: 1; display: flex; align-items: center">
+            <img src="assets/san2025/prior_poo_decoding.png" style="width: 14.5cm" alt=""></div>
+        </div>
+        <p class="cite">Federman N., Romano S.A., et al., Nature Communications, 2024</p>
+        <p class="cite" style="text-align: center">Poo C., Agarwal G., et al., Nature, 2021</p>
+      </div>
+    </section>
+
+    <section id="methods" style="flex: 1">
+      <h2>Decoding position from neural activity</h2>
+      <img src="figures/preprocessing_N31_97-100.svg" style="width: 38cm" alt="">
+      <ul class="caption" style="font-size: 24pt; color: var(--ink)">
+        <li><b>Neurons removed</b>: mean firing rate &lt; 0.1 Hz, or unstable between session halves.
+            <b>Trials removed</b>: low performance (d′), session-start artefacts.</li>
+        <li><b>Input</b>: spike counts in 200 ms bins, Gaussian-smoothed (σ = 200 ms); current bin only,
+            plus the trial’s context.</li>
+      </ul>
+      <div class="row" style="justify-content: space-between">
+        <div><h3>Decoder: multilayer perceptron</h3><!--MLP--><svg viewBox="0 0 190 118" width="19.0cm" height="11.8cm" xmlns="http://www.w3.org/2000/svg"><g stroke="#BDBDBD" stroke-width="0.25"><line x1="48" y1="22.0" x2="84" y2="18"/><line x1="48" y1="22.0" x2="84" y2="29"/><line x1="48" y1="22.0" x2="84" y2="40"/><line x1="48" y1="22.0" x2="84" y2="51"/><line x1="48" y1="22.0" x2="84" y2="62"/><line x1="48" y1="22.0" x2="84" y2="73"/><line x1="48" y1="22.0" x2="84" y2="84"/><line x1="48" y1="22.0" x2="84" y2="95"/><line x1="48" y1="31.5" x2="84" y2="18"/><line x1="48" y1="31.5" x2="84" y2="29"/><line x1="48" y1="31.5" x2="84" y2="40"/><line x1="48" y1="31.5" x2="84" y2="51"/><line x1="48" y1="31.5" x2="84" y2="62"/><line x1="48" y1="31.5" x2="84" y2="73"/><line x1="48" y1="31.5" x2="84" y2="84"/><line x1="48" y1="31.5" x2="84" y2="95"/><line x1="48" y1="41.0" x2="84" y2="18"/><line x1="48" y1="41.0" x2="84" y2="29"/><line x1="48" y1="41.0" x2="84" y2="40"/><line x1="48" y1="41.0" x2="84" y2="51"/><line x1="48" y1="41.0" x2="84" y2="62"/><line x1="48" y1="41.0" x2="84" y2="73"/><line x1="48" y1="41.0" x2="84" y2="84"/><line x1="48" y1="41.0" x2="84" y2="95"/><line x1="48" y1="50.5" x2="84" y2="18"/><line x1="48" y1="50.5" x2="84" y2="29"/><line x1="48" y1="50.5" x2="84" y2="40"/><line x1="48" y1="50.5" x2="84" y2="51"/><line x1="48" y1="50.5" x2="84" y2="62"/><line x1="48" y1="50.5" x2="84" y2="73"/><line x1="48" y1="50.5" x2="84" y2="84"/><line x1="48" y1="50.5" x2="84" y2="95"/><line x1="48" y1="60.0" x2="84" y2="18"/><line x1="48" y1="60.0" x2="84" y2="29"/><line x1="48" y1="60.0" x2="84" y2="40"/><line x1="48" y1="60.0" x2="84" y2="51"/><line x1="48" y1="60.0" x2="84" y2="62"/><line x1="48" y1="60.0" x2="84" y2="73"/><line x1="48" y1="60.0" x2="84" y2="84"/><line x1="48" y1="60.0" x2="84" y2="95"/><line x1="48" y1="69.5" x2="84" y2="18"/><line x1="48" y1="69.5" x2="84" y2="29"/><line x1="48" y1="69.5" x2="84" y2="40"/><line x1="48" y1="69.5" x2="84" y2="51"/><line x1="48" y1="69.5" x2="84" y2="62"/><line x1="48" y1="69.5" x2="84" y2="73"/><line x1="48" y1="69.5" x2="84" y2="84"/><line x1="48" y1="69.5" x2="84" y2="95"/><line x1="48" y1="85" x2="84" y2="18"/><line x1="48" y1="85" x2="84" y2="29"/><line x1="48" y1="85" x2="84" y2="40"/><line x1="48" y1="85" x2="84" y2="51"/><line x1="48" y1="85" x2="84" y2="62"/><line x1="48" y1="85" x2="84" y2="73"/><line x1="48" y1="85" x2="84" y2="84"/><line x1="48" y1="85" x2="84" y2="95"/><line x1="48" y1="94" x2="84" y2="18"/><line x1="48" y1="94" x2="84" y2="29"/><line x1="48" y1="94" x2="84" y2="40"/><line x1="48" y1="94" x2="84" y2="51"/><line x1="48" y1="94" x2="84" y2="62"/><line x1="48" y1="94" x2="84" y2="73"/><line x1="48" y1="94" x2="84" y2="84"/><line x1="48" y1="94" x2="84" y2="95"/><line x1="84" y1="18" x2="112" y2="18"/><line x1="84" y1="18" x2="112" y2="29"/><line x1="84" y1="18" x2="112" y2="40"/><line x1="84" y1="18" x2="112" y2="51"/><line x1="84" y1="18" x2="112" y2="62"/><line x1="84" y1="18" x2="112" y2="73"/><line x1="84" y1="18" x2="112" y2="84"/><line x1="84" y1="18" x2="112" y2="95"/><line x1="84" y1="29" x2="112" y2="18"/><line x1="84" y1="29" x2="112" y2="29"/><line x1="84" y1="29" x2="112" y2="40"/><line x1="84" y1="29" x2="112" y2="51"/><line x1="84" y1="29" x2="112" y2="62"/><line x1="84" y1="29" x2="112" y2="73"/><line x1="84" y1="29" x2="112" y2="84"/><line x1="84" y1="29" x2="112" y2="95"/><line x1="84" y1="40" x2="112" y2="18"/><line x1="84" y1="40" x2="112" y2="29"/><line x1="84" y1="40" x2="112" y2="40"/><line x1="84" y1="40" x2="112" y2="51"/><line x1="84" y1="40" x2="112" y2="62"/><line x1="84" y1="40" x2="112" y2="73"/><line x1="84" y1="40" x2="112" y2="84"/><line x1="84" y1="40" x2="112" y2="95"/><line x1="84" y1="51" x2="112" y2="18"/><line x1="84" y1="51" x2="112" y2="29"/><line x1="84" y1="51" x2="112" y2="40"/><line x1="84" y1="51" x2="112" y2="51"/><line x1="84" y1="51" x2="112" y2="62"/><line x1="84" y1="51" x2="112" y2="73"/><line x1="84" y1="51" x2="112" y2="84"/><line x1="84" y1="51" x2="112" y2="95"/><line x1="84" y1="62" x2="112" y2="18"/><line x1="84" y1="62" x2="112" y2="29"/><line x1="84" y1="62" x2="112" y2="40"/><line x1="84" y1="62" x2="112" y2="51"/><line x1="84" y1="62" x2="112" y2="62"/><line x1="84" y1="62" x2="112" y2="73"/><line x1="84" y1="62" x2="112" y2="84"/><line x1="84" y1="62" x2="112" y2="95"/><line x1="84" y1="73" x2="112" y2="18"/><line x1="84" y1="73" x2="112" y2="29"/><line x1="84" y1="73" x2="112" y2="40"/><line x1="84" y1="73" x2="112" y2="51"/><line x1="84" y1="73" x2="112" y2="62"/><line x1="84" y1="73" x2="112" y2="73"/><line x1="84" y1="73" x2="112" y2="84"/><line x1="84" y1="73" x2="112" y2="95"/><line x1="84" y1="84" x2="112" y2="18"/><line x1="84" y1="84" x2="112" y2="29"/><line x1="84" y1="84" x2="112" y2="40"/><line x1="84" y1="84" x2="112" y2="51"/><line x1="84" y1="84" x2="112" y2="62"/><line x1="84" y1="84" x2="112" y2="73"/><line x1="84" y1="84" x2="112" y2="84"/><line x1="84" y1="84" x2="112" y2="95"/><line x1="84" y1="95" x2="112" y2="18"/><line x1="84" y1="95" x2="112" y2="29"/><line x1="84" y1="95" x2="112" y2="40"/><line x1="84" y1="95" x2="112" y2="51"/><line x1="84" y1="95" x2="112" y2="62"/><line x1="84" y1="95" x2="112" y2="73"/><line x1="84" y1="95" x2="112" y2="84"/><line x1="84" y1="95" x2="112" y2="95"/><line x1="112" y1="18" x2="142" y2="57"/><line x1="112" y1="29" x2="142" y2="57"/><line x1="112" y1="40" x2="142" y2="57"/><line x1="112" y1="51" x2="142" y2="57"/><line x1="112" y1="62" x2="142" y2="57"/><line x1="112" y1="73" x2="142" y2="57"/><line x1="112" y1="84" x2="142" y2="57"/><line x1="112" y1="95" x2="142" y2="57"/></g><circle cx="48" cy="22.0" r="3.6" fill="#fff" stroke="#1E1E1E" stroke-width="0.7"/><circle cx="48" cy="31.5" r="3.6" fill="#fff" stroke="#1E1E1E" stroke-width="0.7"/><circle cx="48" cy="41.0" r="3.6" fill="#fff" stroke="#1E1E1E" stroke-width="0.7"/><circle cx="48" cy="50.5" r="3.6" fill="#fff" stroke="#1E1E1E" stroke-width="0.7"/><circle cx="48" cy="60.0" r="3.6" fill="#fff" stroke="#1E1E1E" stroke-width="0.7"/><circle cx="48" cy="69.5" r="3.6" fill="#fff" stroke="#1E1E1E" stroke-width="0.7"/><rect x="44.4" y="81.4" width="7.2" height="7.2" fill="#fff" stroke="#1E1E1E" stroke-width="0.7"/><rect x="44.4" y="90.4" width="7.2" height="7.2" fill="#fff" stroke="#1E1E1E" stroke-width="0.7"/><circle cx="84" cy="18" r="3.6" fill="#E6E6E6" stroke="#1E1E1E" stroke-width="0.7"/><circle cx="84" cy="29" r="3.6" fill="#E6E6E6" stroke="#1E1E1E" stroke-width="0.7"/><circle cx="84" cy="40" r="3.6" fill="#E6E6E6" stroke="#1E1E1E" stroke-width="0.7"/><circle cx="84" cy="51" r="3.6" fill="#E6E6E6" stroke="#1E1E1E" stroke-width="0.7"/><circle cx="84" cy="62" r="3.6" fill="#E6E6E6" stroke="#1E1E1E" stroke-width="0.7"/><circle cx="84" cy="73" r="3.6" fill="#E6E6E6" stroke="#1E1E1E" stroke-width="0.7"/><circle cx="84" cy="84" r="3.6" fill="#E6E6E6" stroke="#1E1E1E" stroke-width="0.7"/><circle cx="84" cy="95" r="3.6" fill="#E6E6E6" stroke="#1E1E1E" stroke-width="0.7"/><circle cx="112" cy="18" r="3.6" fill="#E6E6E6" stroke="#1E1E1E" stroke-width="0.7"/><circle cx="112" cy="29" r="3.6" fill="#E6E6E6" stroke="#1E1E1E" stroke-width="0.7"/><circle cx="112" cy="40" r="3.6" fill="#E6E6E6" stroke="#1E1E1E" stroke-width="0.7"/><circle cx="112" cy="51" r="3.6" fill="#E6E6E6" stroke="#1E1E1E" stroke-width="0.7"/><circle cx="112" cy="62" r="3.6" fill="#E6E6E6" stroke="#1E1E1E" stroke-width="0.7"/><circle cx="112" cy="73" r="3.6" fill="#E6E6E6" stroke="#1E1E1E" stroke-width="0.7"/><circle cx="112" cy="84" r="3.6" fill="#E6E6E6" stroke="#1E1E1E" stroke-width="0.7"/><circle cx="112" cy="95" r="3.6" fill="#E6E6E6" stroke="#1E1E1E" stroke-width="0.7"/><circle cx="142" cy="57" r="5" fill="#1E1E1E"/><text x="40.0" y="45.0" font-size="8.47" text-anchor="end" font-weight="400" fill="#1E1E1E">N neurons</text><text x="40.0" y="54.0" font-size="7.06" text-anchor="end" font-weight="400" fill="#5A5A5A">smoothed</text><text x="40.0" y="92.0" font-size="8.47" text-anchor="end" font-weight="400" fill="#1E1E1E">context</text><text x="98.0" y="10.0" font-size="7.06" text-anchor="middle" font-weight="400" fill="#5A5A5A">Linear → BatchNorm → ReLU → Dropout</text><text x="98.0" y="111.0" font-size="7.76" text-anchor="middle" font-weight="400" fill="#1E1E1E">1–3 hidden layers · 128–512 units</text><text x="150.0" y="56.0" font-size="8.47" text-anchor="start" font-weight="600" fill="#1E1E1E">position</text><text x="150.0" y="65.0" font-size="7.06" text-anchor="start" font-weight="400" fill="#5A5A5A">(linear, cm)</text></svg><!--/MLP--></div>
+        <div><h3 style="text-align: center; padding-left: 3.2cm">Trial-wise 5-fold CV</h3><!--CV--><svg viewBox="0 0 190 118" width="19.0cm" height="11.8cm" xmlns="http://www.w3.org/2000/svg"><text x="111.0" y="9.0" font-size="7.76" text-anchor="middle" font-weight="400" fill="#1E1E1E">trials, shuffled — each trial stays whole</text><text x="32.0" y="18.5" font-size="7.76" text-anchor="end" font-weight="400" fill="#1E1E1E">trials</text><rect x="36.4" y="13" width="14.2" height="7" fill="#fff" stroke="#1E1E1E" stroke-width="0.4"/><rect x="51.4" y="13" width="14.2" height="7" fill="#fff" stroke="#1E1E1E" stroke-width="0.4"/><rect x="66.4" y="13" width="14.2" height="7" fill="#fff" stroke="#1E1E1E" stroke-width="0.4"/><rect x="81.4" y="13" width="14.2" height="7" fill="#fff" stroke="#1E1E1E" stroke-width="0.4"/><rect x="96.4" y="13" width="14.2" height="7" fill="#fff" stroke="#1E1E1E" stroke-width="0.4"/><rect x="111.4" y="13" width="14.2" height="7" fill="#fff" stroke="#1E1E1E" stroke-width="0.4"/><rect x="126.4" y="13" width="14.2" height="7" fill="#fff" stroke="#1E1E1E" stroke-width="0.4"/><rect x="141.4" y="13" width="14.2" height="7" fill="#fff" stroke="#1E1E1E" stroke-width="0.4"/><rect x="156.4" y="13" width="14.2" height="7" fill="#fff" stroke="#1E1E1E" stroke-width="0.4"/><rect x="171.4" y="13" width="14.2" height="7" fill="#fff" stroke="#1E1E1E" stroke-width="0.4"/><text x="32.0" y="41.5" font-size="7.76" text-anchor="end" font-weight="400" fill="#1E1E1E">fold 1</text><rect x="36.4" y="36" width="14.2" height="7" fill="#1E1E1E" stroke="#1E1E1E" stroke-width="0.4"/><rect x="51.4" y="36" width="14.2" height="7" fill="#1E1E1E" stroke="#1E1E1E" stroke-width="0.4"/><rect x="66.4" y="36" width="14.2" height="7" fill="#E3E3E3" stroke="#1E1E1E" stroke-width="0.4"/><rect x="81.4" y="36" width="14.2" height="7" fill="#E3E3E3" stroke="#1E1E1E" stroke-width="0.4"/><rect x="96.4" y="36" width="14.2" height="7" fill="#E3E3E3" stroke="#1E1E1E" stroke-width="0.4"/><rect x="111.4" y="36" width="14.2" height="7" fill="#E3E3E3" stroke="#1E1E1E" stroke-width="0.4"/><rect x="126.4" y="36" width="14.2" height="7" fill="#E3E3E3" stroke="#1E1E1E" stroke-width="0.4"/><rect x="141.4" y="36" width="14.2" height="7" fill="#9A9A9A" stroke="#1E1E1E" stroke-width="0.4"/><rect x="156.4" y="36" width="14.2" height="7" fill="#9A9A9A" stroke="#1E1E1E" stroke-width="0.4"/><rect x="171.4" y="36" width="14.2" height="7" fill="#E3E3E3" stroke="#1E1E1E" stroke-width="0.4"/><text x="32.0" y="55.5" font-size="7.76" text-anchor="end" font-weight="400" fill="#1E1E1E">fold 2</text><rect x="36.4" y="50" width="14.2" height="7" fill="#9A9A9A" stroke="#1E1E1E" stroke-width="0.4"/><rect x="51.4" y="50" width="14.2" height="7" fill="#E3E3E3" stroke="#1E1E1E" stroke-width="0.4"/><rect x="66.4" y="50" width="14.2" height="7" fill="#1E1E1E" stroke="#1E1E1E" stroke-width="0.4"/><rect x="81.4" y="50" width="14.2" height="7" fill="#1E1E1E" stroke="#1E1E1E" stroke-width="0.4"/><rect x="96.4" y="50" width="14.2" height="7" fill="#E3E3E3" stroke="#1E1E1E" stroke-width="0.4"/><rect x="111.4" y="50" width="14.2" height="7" fill="#E3E3E3" stroke="#1E1E1E" stroke-width="0.4"/><rect x="126.4" y="50" width="14.2" height="7" fill="#E3E3E3" stroke="#1E1E1E" stroke-width="0.4"/><rect x="141.4" y="50" width="14.2" height="7" fill="#E3E3E3" stroke="#1E1E1E" stroke-width="0.4"/><rect x="156.4" y="50" width="14.2" height="7" fill="#E3E3E3" stroke="#1E1E1E" stroke-width="0.4"/><rect x="171.4" y="50" width="14.2" height="7" fill="#9A9A9A" stroke="#1E1E1E" stroke-width="0.4"/><text x="32.0" y="77.5" font-size="7.76" text-anchor="end" font-weight="400" fill="#1E1E1E">fold 5</text><rect x="36.4" y="72" width="14.2" height="7" fill="#E3E3E3" stroke="#1E1E1E" stroke-width="0.4"/><rect x="51.4" y="72" width="14.2" height="7" fill="#E3E3E3" stroke="#1E1E1E" stroke-width="0.4"/><rect x="66.4" y="72" width="14.2" height="7" fill="#E3E3E3" stroke="#1E1E1E" stroke-width="0.4"/><rect x="81.4" y="72" width="14.2" height="7" fill="#E3E3E3" stroke="#1E1E1E" stroke-width="0.4"/><rect x="96.4" y="72" width="14.2" height="7" fill="#9A9A9A" stroke="#1E1E1E" stroke-width="0.4"/><rect x="111.4" y="72" width="14.2" height="7" fill="#9A9A9A" stroke="#1E1E1E" stroke-width="0.4"/><rect x="126.4" y="72" width="14.2" height="7" fill="#E3E3E3" stroke="#1E1E1E" stroke-width="0.4"/><rect x="141.4" y="72" width="14.2" height="7" fill="#E3E3E3" stroke="#1E1E1E" stroke-width="0.4"/><rect x="156.4" y="72" width="14.2" height="7" fill="#1E1E1E" stroke="#1E1E1E" stroke-width="0.4"/><rect x="171.4" y="72" width="14.2" height="7" fill="#1E1E1E" stroke="#1E1E1E" stroke-width="0.4"/><text x="111.0" y="67.0" font-size="9.17" text-anchor="middle" font-weight="400" fill="#1E1E1E">⋮</text><rect x="36" y="90" width="7" height="7" fill="#E3E3E3" stroke="#1E1E1E" stroke-width="0.4"/><text x="46.0" y="96.5" font-size="7.76" text-anchor="start" font-weight="400" fill="#1E1E1E">train</text><rect x="78" y="90" width="7" height="7" fill="#9A9A9A" stroke="#1E1E1E" stroke-width="0.4"/><text x="88.0" y="96.5" font-size="7.76" text-anchor="start" font-weight="400" fill="#1E1E1E">validation</text><rect x="140" y="90" width="7" height="7" fill="#1E1E1E" stroke="#1E1E1E" stroke-width="0.4"/><text x="150.0" y="96.5" font-size="7.76" text-anchor="start" font-weight="400" fill="#1E1E1E">test</text><text x="111.0" y="112.0" font-size="7.06" text-anchor="middle" font-weight="400" fill="#5A5A5A">each test fold → one R² → one dot per box</text></svg><!--/CV--></div>
+      </div>
+      <p class="caption">Hyperparameters chosen per outer fold by Optuna (TPE, 20 trials) on the validation
+        trials · Adam · MSE loss · early stopping. One model per target.</p>
+    </section>
+
+  </div>
+  <div class="col">
+
+
+    <section id="datasets">
+      <h2>14 recordings from 12 mice</h2>
+      <div class="key">
+        <span><i class="dot" style="background: var(--pir); border-color: var(--pir)"></i>Piriform cortex</span>
+        <span><i class="dot" style="background: var(--ca3); border-color: var(--ca3)"></i>CA3</span>
+        <span><i class="dot" style="background: var(--dg); border-color: var(--dg)"></i>DG</span>
+        <span style="margin-left: 1cm"><i class="dot" style="border-color: var(--ink)"></i>naive</span>
+        <span><i class="dot" style="background: var(--ink); border-color: var(--ink)"></i>expert</span>
+      </div>
+      <div class="row">
+        <img src="figures/datasets_neurons_vs_trials.svg" style="width: 18.5cm" alt="">
+        <img src="figures/scatter_r2_pos_vs_speed.svg" style="width: 18.5cm" alt="">
+      </div>
+      <p class="caption">Right: position vs speed decoding (separate models, median test R²). Speed is
+        decoded from every recording; in naive piriform cortex, position is not.</p>
+    </section>
+
+    <section id="performance">
+      <h2>After learning: piriform cortex ≈ hippocampus</h2>
+      <img src="figures/boxplot_r2_pos.svg" style="width: 38cm" alt="">
+      <p class="caption">Test R² of each outer fold (dots); number = median of the 5 folds.</p>
+    </section>
+
+    <section id="corridor">
+      <h2>Decoded vs true position along the corridor</h2>
+      <img src="figures/corridor_heatmap_mae.svg" style="width: 38cm" alt="">
+      <p class="caption">Top: decoded-position distribution per true position (columns normalised; best
+        expert per region, 5 test folds). Bottom: mean absolute error, expert vs best naive. Squared-error
+        decoders tend to err least near the mean training position (24–32 cm).</p>
+    </section>
+
+    <section id="predictions">
+      <h2>Predictions over real data</h2>
+      <div class="region pir"><span class="tag">Piriform cortex</span>
+        <img src="figures/pred_pos_Pir.svg" style="width: 38cm" alt=""></div>
+      <div class="region ca3" style="margin-top: 0.3cm"><span class="tag">CA3</span>
+        <img src="figures/pred_pos_CA3.svg" style="width: 38cm" alt=""></div>
+      <div class="region dg" style="margin-top: 0.3cm"><span class="tag">DG</span>
+        <img src="figures/pred_pos_DG.svg" style="width: 38cm" alt=""></div>
+    </section>
+
+    <section id="conclusions" style="flex: 1">
+      <h2>Conclusions</h2>
+      <ul style="font-size: 26pt">
+        <li>After learning, position can be decoded from piriform cortex as accurately as from CA3 and DG
+          (median R² 0.46–0.57 vs 0.14–0.44).</li>
+        <li>Before learning, position is poorly decoded from piriform cortex (R² 0.11–0.18), while speed is
+          decoded from the same neurons.</li>
+        <li>In expert animals, the decoded position tracks the corridor and shifts sharply at the entry of
+          the odour-context zone.</li>
+        <li>Spatial information in the piriform cortex may emerge with learning of the odour–place
+          association.</li>
+      </ul>
+    </section>
+
+  </div>
+</main>
+<footer>Acknowledgments: SNSF SPIRIT 216044 · PICT 2020-00360 · FOCEM-Mercosur (COF 03/11)</footer>
+</body>
+</html>

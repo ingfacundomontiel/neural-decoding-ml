@@ -75,3 +75,13 @@ docs/pre-procesamiento.md
 *.h5
 *.hdf5
 *.key
+
+# SAN 2026 poster: reference posters, regenerable analysis figures and previews stay local
+conferences/san-2025/
+conferences/sfn-2025/
+conferences/san-2026/figures/t1/
+conferences/san-2026/figures/t3/
+conferences/san-2026/figures/_preview_poster_*.png
+conferences/san-2026/figures/poster.png
+# ...except the printed poster itself (`*.pdf` is ignored repo-wide above)
+!conferences/san-2026/poster-san-2026-montiel.pdf

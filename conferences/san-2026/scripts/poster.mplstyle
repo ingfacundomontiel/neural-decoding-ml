@@ -1,0 +1,38 @@
+# SAN 2026 poster — matplotlib style. Sizes are PRINTED points: every figure is
+# generated at its final physical size and placed at 100 % (plan.md, style guide).
+font.family        : IBM Plex Sans
+font.size          : 24
+axes.labelsize     : 26
+axes.titlesize     : 28
+axes.titleweight   : semibold
+axes.labelcolor    : 1E1E1E
+axes.edgecolor     : 1E1E1E
+axes.linewidth     : 1.6
+axes.spines.top    : False
+axes.spines.right  : False
+axes.grid          : False
+axes.titlepad      : 14
+axes.labelpad      : 10
+xtick.labelsize    : 22
+ytick.labelsize    : 22
+xtick.color        : 1E1E1E
+ytick.color        : 1E1E1E
+xtick.major.size   : 8
+ytick.major.size   : 8
+xtick.major.width  : 1.6
+ytick.major.width  : 1.6
+xtick.major.pad    : 6
+ytick.major.pad    : 6
+legend.fontsize    : 22
+legend.frameon     : False
+legend.handlelength: 1.6
+lines.linewidth    : 3
+lines.markersize   : 12
+patch.linewidth    : 1.6
+text.color         : 1E1E1E
+figure.facecolor   : white
+axes.facecolor     : white
+savefig.facecolor  : white
+savefig.bbox       : standard
+svg.fonttype       : path
+pdf.fonttype       : 42
