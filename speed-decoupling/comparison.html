@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Speed decoupling comparison</title>
+<style>
+  @font-face { font-family: "Plex"; src: url("../conferences/san-2026/assets/fonts/IBMPlexSans-Regular.ttf"); font-weight: 400; }
+  @font-face { font-family: "Plex"; src: url("../conferences/san-2026/assets/fonts/IBMPlexSans-SemiBold.ttf"); font-weight: 600; }
+  :root { --ink: #1E1E1E; --ink-soft: #5A5A5A; --rule: #D6D6D6; --summary: #F4F4F4; }
+  html, body { margin: 0; background: #fff; color: var(--ink); }
+  body { font-family: "Plex", "IBM Plex Sans", system-ui, sans-serif; font-size: 16px; line-height: 1.5; }
+  main { max-width: 1080px; margin: 0 auto; padding: 32px 16px 48px; }
+  h1 { font-size: 26px; font-weight: 600; line-height: 1.25; margin: 0 0 16px; }
+  p, li { max-width: 80ch; }
+  ul { padding-left: 1.2em; }
+  li { margin-bottom: 6px; }
+  code { font-size: 0.9em; background: #F2F2F2; padding: 1px 4px; border-radius: 3px; }
+  .key { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; margin: 24px 0 12px;
+          font-size: 14px; color: var(--ink-soft); }
+  .key .k { display: inline-flex; align-items: center; }
+  .key .sep { width: 1px; height: 18px; background: var(--rule); }
+  .dot { display: inline-block; width: 11px; height: 11px; border: 2.5px solid; border-radius: 50%;
+          margin-right: 7px; vertical-align: -1px; box-sizing: border-box; }
+  .table-wrap { overflow-x: auto; }
+  .delta { font-size: 11px; font-weight: 600; margin-left: 6px; }
+  .key .delta { margin-left: 0; font-size: 13px; }
+  .delta.up { color: #1B7F3B; }
+  .delta.down { color: #B3261E; }
+  .delta.flat { color: #8C8C8C; }
+  table { border-collapse: collapse; width: auto; font-variant-numeric: tabular-nums; font-size: 15px; }
+  td.rec { padding-right: 20px; }
+  th, td { padding: 6px 12px; text-align: right; white-space: nowrap; }
+  th { font-weight: 600; }
+  th.grp { text-align: center; border-bottom: 2px solid var(--ink); white-space: normal; }
+  thead tr:last-child th { border-bottom: 1px solid var(--ink); color: var(--ink-soft); font-size: 13px; }
+  th.rec, td.rec { text-align: left; }
+  td:nth-child(2n+2), th:nth-child(2n+2) { padding-left: 28px; }
+  thead tr:last-child th:nth-child(2n+1) { padding-left: 28px; }
+  tbody tr { border-bottom: 2px solid #fff; }
+  tbody tr.region-start { border-top: 6px solid #fff; }
+  tbody tr.summary { font-weight: 600; }
+  tbody tr.summary.first { border-top: 2px solid var(--ink); }
+  tbody tr.summary.first td { padding-top: 8px; }
+  /* vertical rule between column groups */
+  thead tr:first-child th:nth-child(3),
+  thead tr:first-child th:nth-child(4),
+  thead tr:last-child th:nth-child(3),
+  thead tr:last-child th:nth-child(5),
+  tbody td:nth-child(4),
+  tbody td:nth-child(6) { border-left: 2px solid #8C8C8C; }
+</style>
+</head>
+<body>
+<main>
+<h1>Speed decoupling — position decoding from neural activity, speed, or both</h1>
+<p>Three position decoders, one per column group, identical in everything but their input, so every comparison is paired:</p>
+<ul><li>MLP (Optuna, 20 trials; 5 trial-wise outer folds × 1 validation hold-out)</li><li>Same kept bins (post-context tail removed at 515° ≈ 62.9 cm, Gaussian smoothing σ = 200 ms, no history window)</li><li>Same trial folds</li></ul>
+<p>Experiments:</p>
+<ul><li><strong>Neural Act.</strong> (Batch 007): smoothed spike counts of the kept neurons in the current 200 ms bin, plus the trial's context one-hot (rewarded / unrewarded).</li><li><strong>Speed (smoothed)</strong> (Batch 013): no neural data. One speed value: the continuous raw speed series smoothed with exactly the Gaussian applied to the spike counts (σ = 200 ms, same function), sampled at the current bin. Speed and neurons then share the same temporal transformation, whereas the window also exposes acceleration. The same context one-hot is appended (3 inputs).</li><li><strong>Neural Act. + Speed (smoothed)</strong> (Batch 014): the Neural Act. features (without their context columns) plus the 3 Speed (smoothed) inputs.</li></ul>
+<p>Values are medians over the 5 outer test folds: R² and mean absolute error (MAE, cm). Summary rows are medians of the per-recording values.</p>
+<div class="key"><span class="k"><span class="dot" style="border-color:#0B63A5;background:#0B63A5"></span>Piriform cortex</span><span class="k"><span class="dot" style="border-color:#8E3B8F;background:#8E3B8F"></span>CA3</span><span class="k"><span class="dot" style="border-color:#C0581B;background:#C0581B"></span>DG</span><span class="sep"></span><span class="k"><span class="dot" style="border-color:#1E1E1E;background:#fff"></span>naive</span><span class="k"><span class="dot" style="border-color:#1E1E1E;background:#1E1E1E"></span>expert</span><span class="sep"></span><span class="k"><span class="delta up">▲</span>&nbsp;better /&nbsp;<span class="delta down">▼</span>&nbsp;worse than Neural Act. (higher R², lower MAE)</span></div>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th rowspan="2" class="rec">Recording</th>
+<th colspan="2" class="grp">Neural Act.</th>
+<th colspan="2" class="grp">Speed (smoothed)</th>
+<th colspan="2" class="grp">Neural Act. + Speed (smoothed)</th>
+</tr>
+<tr><th>R²</th><th>MAE (cm)</th><th>R²</th><th>MAE (cm)</th><th>R²</th><th>MAE (cm)</th></tr>
+</thead>
+<tbody>
+<tr style="background:#E7EFF6"><td class="rec"><span class="dot" style="border-color:#0B63A5;background:#fff"></span>Pir-L7-Naive</td><td>0.110</td><td>14.9</td><td>0.045<span class="delta down">▼ 0.065</span></td><td>17.2<span class="delta down">▼ 2.3</span></td><td>0.143<span class="delta up">▲ 0.033</span></td><td>14.8<span class="delta up">▲ 0.1</span></td></tr>
+<tr style="background:#E7EFF6"><td class="rec"><span class="dot" style="border-color:#0B63A5;background:#fff"></span>Pir-N53-Naive</td><td>0.178</td><td>14.5</td><td>0.086<span class="delta down">▼ 0.092</span></td><td>15.2<span class="delta down">▼ 0.7</span></td><td>0.196<span class="delta up">▲ 0.018</span></td><td>14.3<span class="delta up">▲ 0.2</span></td></tr>
+<tr style="background:#C4DAE9"><td class="rec"><span class="dot" style="border-color:#0B63A5;background:#0B63A5"></span>Pir-L3-Expert</td><td>0.460</td><td>10.3</td><td>0.262<span class="delta down">▼ 0.198</span></td><td>13.4<span class="delta down">▼ 3.1</span></td><td>0.605<span class="delta up">▲ 0.145</span></td><td>8.7<span class="delta up">▲ 1.6</span></td></tr>
+<tr style="background:#C4DAE9"><td class="rec"><span class="dot" style="border-color:#0B63A5;background:#0B63A5"></span>Pir-L5-Expert</td><td>0.499</td><td>11.0</td><td>0.308<span class="delta down">▼ 0.191</span></td><td>13.3<span class="delta down">▼ 2.3</span></td><td>0.599<span class="delta up">▲ 0.100</span></td><td>9.1<span class="delta up">▲ 1.9</span></td></tr>
+<tr style="background:#C4DAE9"><td class="rec"><span class="dot" style="border-color:#0B63A5;background:#0B63A5"></span>Pir-N31-Expert</td><td>0.571</td><td>10.1</td><td>0.372<span class="delta down">▼ 0.199</span></td><td>12.5<span class="delta down">▼ 2.4</span></td><td>0.673<span class="delta up">▲ 0.102</span></td><td>8.7<span class="delta up">▲ 1.4</span></td></tr>
+<tr style="background:#C4DAE9"><td class="rec"><span class="dot" style="border-color:#0B63A5;background:#0B63A5"></span>Pir-N59-Expert</td><td>0.215</td><td>15.6</td><td>0.189<span class="delta down">▼ 0.026</span></td><td>15.9<span class="delta down">▼ 0.3</span></td><td>0.292<span class="delta up">▲ 0.077</span></td><td>14.0<span class="delta up">▲ 1.6</span></td></tr>
+<tr class="region-start" style="background:#F4EBF4"><td class="rec"><span class="dot" style="border-color:#8E3B8F;background:#fff"></span>CA3-S30-Naive</td><td>0.162</td><td>15.9</td><td>0.184<span class="delta up">▲ 0.022</span></td><td>15.8<span class="delta up">▲ 0.1</span></td><td>0.230<span class="delta up">▲ 0.068</span></td><td>15.0<span class="delta up">▲ 0.9</span></td></tr>
+<tr style="background:#F4EBF4"><td class="rec"><span class="dot" style="border-color:#8E3B8F;background:#fff"></span>CA3-S31-Naive</td><td>0.268</td><td>14.2</td><td>0.149<span class="delta down">▼ 0.119</span></td><td>16.0<span class="delta down">▼ 1.8</span></td><td>0.360<span class="delta up">▲ 0.092</span></td><td>12.9<span class="delta up">▲ 1.3</span></td></tr>
+<tr style="background:#E4D0E4"><td class="rec"><span class="dot" style="border-color:#8E3B8F;background:#8E3B8F"></span>CA3-S17-Expert</td><td>0.295</td><td>12.4</td><td>0.193<span class="delta down">▼ 0.102</span></td><td>14.4<span class="delta down">▼ 2.0</span></td><td>0.377<span class="delta up">▲ 0.082</span></td><td>11.5<span class="delta up">▲ 0.9</span></td></tr>
+<tr style="background:#E4D0E4"><td class="rec"><span class="dot" style="border-color:#8E3B8F;background:#8E3B8F"></span>CA3-S18-Expert</td><td>0.442</td><td>11.7</td><td>0.426<span class="delta down">▼ 0.016</span></td><td>12.0<span class="delta down">▼ 0.3</span></td><td>0.577<span class="delta up">▲ 0.135</span></td><td>9.5<span class="delta up">▲ 2.2</span></td></tr>
+<tr class="region-start" style="background:#F9EEE8"><td class="rec"><span class="dot" style="border-color:#C0581B;background:#fff"></span>DG-S24-Naive</td><td>0.314</td><td>12.8</td><td>0.080<span class="delta down">▼ 0.234</span></td><td>16.2<span class="delta down">▼ 3.4</span></td><td>0.375<span class="delta up">▲ 0.061</span></td><td>12.1<span class="delta up">▲ 0.7</span></td></tr>
+<tr style="background:#F9EEE8"><td class="rec"><span class="dot" style="border-color:#C0581B;background:#fff"></span>DG-S38-Naive</td><td>0.101</td><td>14.5</td><td>0.098<span class="delta down">▼ 0.003</span></td><td>15.8<span class="delta down">▼ 1.3</span></td><td>0.135<span class="delta up">▲ 0.034</span></td><td>14.7<span class="delta down">▼ 0.2</span></td></tr>
+<tr style="background:#F9EEE8"><td class="rec"><span class="dot" style="border-color:#C0581B;background:#fff"></span>DG-S39-Naive</td><td>0.074</td><td>17.4</td><td>0.128<span class="delta up">▲ 0.054</span></td><td>16.1<span class="delta up">▲ 1.3</span></td><td>0.139<span class="delta up">▲ 0.065</span></td><td>15.8<span class="delta up">▲ 1.6</span></td></tr>
+<tr style="background:#F9EEE8"><td class="rec"><span class="dot" style="border-color:#C0581B;background:#fff"></span>DG-S41-Naive</td><td>0.206</td><td>15.3</td><td>0.195<span class="delta down">▼ 0.011</span></td><td>15.5<span class="delta down">▼ 0.2</span></td><td>0.321<span class="delta up">▲ 0.115</span></td><td>13.3<span class="delta up">▲ 2.0</span></td></tr>
+<tr style="background:#F0D7C8"><td class="rec"><span class="dot" style="border-color:#C0581B;background:#C0581B"></span>DG-S17-Expert</td><td>0.369</td><td>11.4</td><td>0.169<span class="delta down">▼ 0.200</span></td><td>13.9<span class="delta down">▼ 2.5</span></td><td>0.434<span class="delta up">▲ 0.065</span></td><td>10.5<span class="delta up">▲ 0.9</span></td></tr>
+<tr style="background:#F0D7C8"><td class="rec"><span class="dot" style="border-color:#C0581B;background:#C0581B"></span>DG-S18-Expert</td><td>0.142</td><td>15.7</td><td>0.166<span class="delta up">▲ 0.024</span></td><td>15.8<span class="delta down">▼ 0.1</span></td><td>0.196<span class="delta up">▲ 0.054</span></td><td>14.3<span class="delta up">▲ 1.4</span></td></tr>
+<tr style="background:#F0D7C8"><td class="rec"><span class="dot" style="border-color:#C0581B;background:#C0581B"></span>DG-S19-Expert</td><td>0.245</td><td>14.1</td><td>0.348<span class="delta up">▲ 0.103</span></td><td>13.5<span class="delta up">▲ 0.6</span></td><td>0.471<span class="delta up">▲ 0.226</span></td><td>11.6<span class="delta up">▲ 2.5</span></td></tr>
+<tr class="summary first" style="background:#C4DAE9"><td class="rec"><span class="dot" style="border-color:#0B63A5;background:#0B63A5"></span>Piriform · Expert (n=4)</td><td>0.480</td><td>10.7</td><td>0.285<span class="delta down">▼ 0.195</span></td><td>13.4<span class="delta down">▼ 2.7</span></td><td>0.602<span class="delta up">▲ 0.122</span></td><td>8.9<span class="delta up">▲ 1.8</span></td></tr>
+<tr class="summary" style="background:#E7EFF6"><td class="rec"><span class="dot" style="border-color:#0B63A5;background:#fff"></span>Piriform · Naive (n=2)</td><td>0.144</td><td>14.7</td><td>0.065<span class="delta down">▼ 0.079</span></td><td>16.2<span class="delta down">▼ 1.5</span></td><td>0.169<span class="delta up">▲ 0.025</span></td><td>14.5<span class="delta up">▲ 0.2</span></td></tr>
+<tr class="summary" style="background:linear-gradient(90deg, #E4D0E4, #F0D7C8)"><td class="rec"><span class="dot" style="border-color:#8E3B8F;background:#8E3B8F"></span><span class="dot" style="border-color:#C0581B;background:#C0581B"></span>Hippocampus · Expert (n=5)</td><td>0.295</td><td>12.4</td><td>0.193<span class="delta down">▼ 0.102</span></td><td>13.9<span class="delta down">▼ 1.5</span></td><td>0.434<span class="delta up">▲ 0.139</span></td><td>11.5<span class="delta up">▲ 0.9</span></td></tr>
+<tr class="summary" style="background:linear-gradient(90deg, #F4EBF4, #F9EEE8)"><td class="rec"><span class="dot" style="border-color:#8E3B8F;background:#fff"></span><span class="dot" style="border-color:#C0581B;background:#fff"></span>Hippocampus · Naive (n=6)</td><td>0.184</td><td>14.9</td><td>0.138<span class="delta down">▼ 0.046</span></td><td>15.9<span class="delta down">▼ 1.0</span></td><td>0.276<span class="delta up">▲ 0.092</span></td><td>14.0<span class="delta up">▲ 0.9</span></td></tr>
+<tr class="summary" style="background:var(--summary)"><td class="rec">All 17 recordings (n=17)</td><td>0.245</td><td>14.2</td><td>0.184<span class="delta down">▼ 0.061</span></td><td>15.5<span class="delta down">▼ 1.3</span></td><td>0.360<span class="delta up">▲ 0.115</span></td><td>12.9<span class="delta up">▲ 1.3</span></td></tr>
+</tbody>
+</table>
+</div>
+</main>
+</body>
+</html>
