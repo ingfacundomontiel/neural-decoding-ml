@@ -12,6 +12,90 @@ Sorted newest-first.
 
 ---
 
+## Batch 014 — neural + smoothed speed decoder (chained after Batch 013), all 17
+
+- **Date launched**: chained inside the Batch 013 wrapper (same log file);
+  started 2026-11-02 16:20 (GPU local time) right after `ALL_DONE_BATCH013`.
+  Two runners (`--regions piriform,ca3` | `--regions dg`). Prints
+  `ALL_DONE_BATCH014`.
+- **Date completed**: 2026-11-03 02:27 (17/17 OK; 40–82 min per experiment,
+  10.1 h wall with two runners — slower than Batch 013 because the input is
+  N + 3). Synced locally 2026-11-03.
+- **Thesis commit at launch**: `5332716` on the host; builder
+  `scripts/build_behavioral_pickles.py --speed-smooth --include-neural`
+  uncommitted at launch (pickles built on the host, mirrored locally).
+  **`ibioml` pin**: `a3adf40`.
+- **Design**: Batch 012 with the symmetric speed input of Batch 013 — the
+  final-pipeline neural features (smoothed counts of the kept neurons) plus
+  `[speed_smooth(t), ctx, not-ctx]`; `input_size = N + 3`. Same MLP, Optuna,
+  folds, kept bins and target as Batches 007/013. Its gain over Batch 013 is the
+  position information the neurons carry beyond running, with both inputs under
+  the same temporal transformation.
+- **Preprocess**: tree `data/processed_neural_speedsmooth_w010/` (17 datasets);
+  verified identical rows/targets/trials to Batch 007 and equal to
+  neural ++ Batch 013 features (`results_behav_speedsmooth_w010/logs/verify_pickles.py`).
+- **Volume**: 17 experiments, pos-only; 10.1 h wall.
+- **Results dirs**: `results_neural_speedsmooth_w010/mlp_<dataset>_pos/`.
+- **Headline finding** (vs Batch 013, same MLP / folds / bins, fold-median R²):
+  neural + smoothed speed reaches median R² **0.360** (MAE 12.9 cm) vs 0.184
+  (15.5 cm) for smoothed speed alone — increment **+0.127** median, positive in
+  **17/17** recordings and **81/85** folds, MAE −2.4 cm median. As expected the
+  increment is above Batch 012's +0.116 (16/17, 77/85), but only slightly: the
+  combined decoder also loses the window's acceleration (0.360 vs 0.400 in
+  Batch 012; Batch 012 ahead in 15/17). Largest increments in the piriform
+  experts (Pir_L3 +0.34, Pir_N31 +0.30, Pir_L5 +0.29; MAE −4 to −5 cm) and in
+  DG_S24 (+0.30), DG_S17 (+0.27), CA3_S31 (+0.21); smallest in the low-R²
+  recordings DG_S39 (+0.01), DG_S18 (+0.03), DG_S38 (+0.04), CA3_S30 (+0.05).
+  Neural + smoothed speed also beats the neural decoder alone in 17/17
+  (median +0.077, 78/85 folds), so the two inputs are partly complementary.
+  Group medians (R² smoothed speed / neural + smoothed speed): piriform expert
+  0.285 / 0.602 (MAE 13.4 → 8.9 cm), piriform naive 0.065 / 0.169, hippocampus
+  expert 0.193 / 0.434, hippocampus naive 0.138 / 0.276. Table with all five
+  decoders: `speed-decoupling/comparison.{md,html}` (script 20).
+
+## Batch 013 — behaviour-only decoder with Gaussian-smoothed speed (symmetric control), all 17
+
+- **Date launched**: 2026-11-02 09:56 (GPU local time; wrapper
+  `results_behav_speedsmooth_w010/logs/batch013_20261102_0956.log`, two runners
+  `--regions piriform,ca3` | `--regions dg`; the same wrapper then runs Batch
+  014). Prints `ALL_DONE_BATCH013`.
+- **Date completed**: 2026-11-02 16:19 (17/17 OK; 26–54 min per experiment,
+  6.4 h wall with two runners). Synced locally 2026-11-02.
+- **Thesis commit at launch**: `5332716` on the host (pulled before launch);
+  builder `scripts/build_behavioral_pickles.py --speed-smooth` uncommitted at
+  launch. **`ibioml` pin**: `a3adf40`.
+- **Design** (director's feedback on Batches 011/012, 2026-11-02): the speed
+  input receives **exactly the transformation applied to the spike counts** —
+  the continuous raw speed series smoothed with `smooth_neural_data`
+  (Gaussian σ = 200 ms = 1 bin, reflect) and sampled at the current bin — instead
+  of the ±2-bin raw window of Batch 011. `X = [speed_smooth(t), ctx, not-ctx]`
+  (3 inputs). Rationale: the window let the MLP read acceleration, which the
+  smoothed neurons cannot express, so Batch 011 favoured the behaviour side; the
+  smoothed version makes speed and neurons comparable by representation, so
+  differences are attributable to signal content. Batch 011 stays as the more
+  generous robustness check (its conclusion can only strengthen here). Same
+  MLP, Optuna, kept bins, trial folds and target as Batch 007.
+- **Preprocess**: tree `data/processed_behav_speedsmooth_w010/` (17 datasets);
+  rows, targets and trial markers verified identical to Batch 007; speed column
+  verified equal to `gaussian_filter1d(speed, 1, mode="reflect")` at the kept bins.
+- **Volume**: 17 experiments, pos-only (+ 17 for Batch 014). Estimated ~18–20 h
+  wall for both with two runners; Batch 013 alone took 6.4 h.
+- **Results dirs**: `results_behav_speedsmooth_w010/mlp_<dataset>_pos/`.
+- **Headline finding** (vs the neural MLP of Batch 007 and the windowed speed
+  decoder of Batch 011, same folds and bins, fold-median R²): with the symmetric
+  speed input the behaviour-only ceiling drops — median R² **0.184** over the 17
+  recordings vs 0.245 neural and 0.242 for the ±2-bin window; median MAE 15.5 cm
+  vs 14.2 / 14.8. Smoothed speed is below the windowed speed in **17/17**
+  recordings (median Δ −0.050), confirming that the window was reading
+  acceleration. The neural decoder is now ahead in **13/17** (median neural −
+  smoothed-speed Δ R² **+0.065**); largest leads DG_S24 (+0.23), DG_S17, Pir_N31,
+  Pir_L3, Pir_L5 (+0.19…+0.20); still behind in DG_S19 (−0.10), DG_S39 (−0.05),
+  DG_S18 and CA3_S30 (−0.02). By group (median R² neural / smoothed speed):
+  piriform expert 0.480 / 0.285, piriform naive 0.144 / 0.065, hippocampus
+  expert 0.295 / 0.193, hippocampus naive 0.184 / 0.138. The expectation held:
+  a lower speed-only ceiling than Batch 011, so Batch 014's increment over this
+  control should exceed Batch 012's +0.116. Read together with Batch 014.
+
 ## Batch 012 — neural + behaviour decoder (smoothed neurons + speed ±400 ms + context), all 17
 
 - **Date launched**: 2026-09-26 13:38 (laptop time), in parallel with Batches

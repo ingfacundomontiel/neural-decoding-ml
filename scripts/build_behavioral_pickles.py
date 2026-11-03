@@ -24,11 +24,24 @@ prepended (``X = [neural…, speed(t-2…t+2), ctx, not-ctx]``): the "neural +
 behaviour" decoder whose gain over the behaviour-only one measures the position
 information the neurons carry beyond running (Batch 012).
 
+With ``--speed-smooth`` (Batches 013/014, the director's symmetric version) the
+five-bin window is replaced by ONE speed value: the continuous speed series
+smoothed with exactly the kernel applied to the spike counts
+(``ibioml.preprocess_data.smooth_neural_data``, σ = ``--sigma-ms`` = 200 ms),
+sampled at the current bin — ``X = [speed_smooth(t), ctx, not-ctx]``. Speed and
+neurons then receive the same temporal transformation, so the comparison is
+attributable to signal content rather than to representation (the window let the
+MLP read acceleration, which smoothed neurons cannot express).
+
 Usage:
     uv run python scripts/build_behavioral_pickles.py \
         --src data/processed_notail_smooth_w010 --out data/processed_behav_speedctx_w010
     uv run python scripts/build_behavioral_pickles.py --include-neural \
         --out data/processed_neural_speedctx_w010
+    uv run python scripts/build_behavioral_pickles.py --speed-smooth \
+        --out data/processed_behav_speedsmooth_w010
+    uv run python scripts/build_behavioral_pickles.py --speed-smooth --include-neural \
+        --out data/processed_neural_speedsmooth_w010
 """
 from __future__ import annotations
 
@@ -47,6 +60,7 @@ from ibioml.preprocess_data import (  # noqa: E402
     get_idx_by_out_of_corridor_trials,
     get_idx_by_position_tail,
     periods_immobility,
+    smooth_neural_data,
 )
 
 from analysis.loaders import load_mat  # noqa: E402
@@ -73,8 +87,20 @@ def kept_raw_indices(mat: dict, cohort: str, tail_deg: float = 515.0) -> np.ndar
     return np.setdiff1d(np.arange(len(pos)), removed.astype(int))
 
 
+def speed_features(vel: np.ndarray, kept: np.ndarray, smooth_sigma_ms: float | None) -> np.ndarray:
+    """Speed columns for the kept bins: the ±2-bin raw window, or the one smoothed value.
+
+    Smoothing runs on the continuous series before any bin is removed — the same
+    order of operations as the neural smoothing in ``ibioml.preprocess_data``."""
+    if smooth_sigma_ms is None:
+        lag_idx = np.clip(kept[:, None] + np.array(SPEED_LAGS)[None, :], 0, len(vel) - 1)
+        return vel[lag_idx]
+    smoothed = smooth_neural_data(vel[:, None], smooth_sigma_ms, binLength=200)
+    return smoothed[kept]
+
+
 def build_one(src_pkl: Path, mat_file: Path, out_dir: Path,
-              include_neural: bool = False) -> tuple[int, int]:
+              include_neural: bool = False, smooth_sigma_ms: float | None = None) -> tuple[int, int]:
     """Write the behavioural pickle (and discovery marker) for one dataset."""
     with src_pkl.open("rb") as f:
         X, y, trial_markers = pickle.load(f)  # noqa: S301 — our own artefact
@@ -86,12 +112,11 @@ def build_one(src_pkl: Path, mat_file: Path, out_dir: Path,
         raise ValueError(f"{src_pkl.name}: reconstructed kept set does not match the pickle "
                          f"({len(kept)} vs {len(y)} rows)")
     vel = np.asarray(mat["velocity"], float).ravel()
-    lag_idx = np.clip(kept[:, None] + np.array(SPEED_LAGS)[None, :], 0, len(vel) - 1)
     ctx = X[:, -2:]
     if not np.isin(ctx, (0.0, 1.0)).all():
         raise ValueError(f"{src_pkl.name}: last two columns are not the context one-hot")
     parts = [X[:, :-2]] if include_neural else []
-    X_behav = np.concatenate([*parts, vel[lag_idx], ctx], axis=1)
+    X_behav = np.concatenate([*parts, speed_features(vel, kept, smooth_sigma_ms), ctx], axis=1)
     stem = src_pkl.name[: -len(POS_VARIANT)]
     out_dir.mkdir(parents=True, exist_ok=True)
     for variant in (POS_VARIANT, MARKER_VARIANT):
@@ -106,11 +131,16 @@ def main() -> None:
     p.add_argument("--out", type=Path, default=ROOT / "data" / "processed_behav_speedctx_w010")
     p.add_argument("--include-neural", action="store_true",
                    help="Prepend the source pickle's (smoothed) neural features.")
+    p.add_argument("--speed-smooth", action="store_true",
+                   help="One Gaussian-smoothed speed value (current bin) instead of the ±2-bin window.")
+    p.add_argument("--sigma-ms", type=float, default=200.0,
+                   help="Kernel σ for --speed-smooth (ms); must match the neural smoothing.")
     args = p.parse_args()
+    sigma = args.sigma_ms if args.speed_smooth else None
     for src_pkl in sorted(args.src.glob(f"*/*{POS_VARIANT}")):
         region_dir = src_pkl.parent.name
         mat_file = ROOT / "data" / "raw" / region_dir / (src_pkl.name[: -len(POS_VARIANT)] + ".mat")
-        shape = build_one(src_pkl, mat_file, args.out / region_dir, args.include_neural)
+        shape = build_one(src_pkl, mat_file, args.out / region_dir, args.include_neural, sigma)
         print(f"{src_pkl.name[: -len(POS_VARIANT)]:32s} X={shape}")
 
 
